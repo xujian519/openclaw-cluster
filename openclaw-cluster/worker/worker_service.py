@@ -48,7 +48,13 @@ class WorkerService:
         # 节点信息
         self.node_id = node_id or self._generate_node_id()
         self.hostname = socket.gethostname()
-        self.platform = platform.system().lower()
+        # 平台名称标准化：darwin -> macos
+        raw_platform = platform.system().lower()
+        self.platform = {
+            "darwin": "macos",
+            "windows": "windows",
+            "linux": "linux",
+        }.get(raw_platform, raw_platform)
         self.arch = platform.machine().lower()
 
         # 获取IP地址
