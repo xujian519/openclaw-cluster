@@ -340,7 +340,13 @@ class WorkerService:
 
                 if response.status == 200:
                     result = await response.json()
-                    logger.info(f"✅ 成功注册到协调器: {result.get('node_id')}")
+                    returned_node_id = result.get("node_id")
+                    if returned_node_id and returned_node_id != self.node_id:
+                        logger.info(f"节点ID已更新: {self.node_id} -> {returned_node_id}")
+                        self.node_id = returned_node_id
+                        if self.heartbeat_client:
+                            self.heartbeat_client.node_id = returned_node_id
+                    logger.info(f"✅ 成功注册到协调器: {returned_node_id}")
                 else:
                     text = await response.text()
                     logger.warning(f"注册到协调器失败: {response.status} - {text[:200]}")
