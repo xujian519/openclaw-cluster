@@ -3,14 +3,15 @@ OpenClaw 集群系统 - 心跳监控服务
 
 监控工作节点的心跳，检测超时节点并触发告警
 """
+
 import asyncio
 from datetime import datetime, timedelta
-from typing import Optional, List, Callable, Dict, Any
+from typing import Any, Callable, Dict, List, Optional
 
-from common.models import NodeInfo, NodeStatus
 from common.logging import get_logger
-from storage.repositories import NodeRepository
+from common.models import NodeInfo, NodeStatus
 from storage.database import Database
+from storage.repositories import NodeRepository
 
 logger = get_logger(__name__)
 
@@ -101,14 +102,20 @@ class HeartbeatMonitor:
                 # 只标记在线或忙碌的节点
                 if node.status in [NodeStatus.ONLINE, NodeStatus.BUSY]:
                     await self._mark_node_offline(node)
-                    timeout_nodes.append({
-                        "node_id": node.node_id,
-                        "hostname": node.hostname,
-                        "last_heartbeat": node.last_heartbeat.isoformat() if node.last_heartbeat else None,
-                        "timeout_seconds": (
-                            datetime.now() - node.last_heartbeat
-                        ).total_seconds() if node.last_heartbeat else None,
-                    })
+                    timeout_nodes.append(
+                        {
+                            "node_id": node.node_id,
+                            "hostname": node.hostname,
+                            "last_heartbeat": (
+                                node.last_heartbeat.isoformat() if node.last_heartbeat else None
+                            ),
+                            "timeout_seconds": (
+                                (datetime.now() - node.last_heartbeat).total_seconds()
+                                if node.last_heartbeat
+                                else None
+                            ),
+                        }
+                    )
 
             return {
                 "checked_at": datetime.now().isoformat(),
@@ -310,9 +317,7 @@ class HeartbeatMonitor:
 
                 # 如果有超时节点，记录日志
                 if result.get("timeout_nodes_count", 0) > 0:
-                    logger.warning(
-                        f"检测到 {result['timeout_nodes_count']} 个超时节点"
-                    )
+                    logger.warning(f"检测到 {result['timeout_nodes_count']} 个超时节点")
                     for node_info in result.get("timeout_nodes", []):
                         logger.warning(
                             f"  - {node_info['node_id']} ({node_info['hostname']}) "
@@ -341,9 +346,7 @@ class HeartbeatMonitor:
             # 更新节点状态
             await self.node_repo.update_status(node.node_id, NodeStatus.OFFLINE)
 
-            logger.warning(
-                f"节点 {node.node_id} ({node.hostname}) 心跳超时，已标记为离线"
-            )
+            logger.warning(f"节点 {node.node_id} ({node.hostname}) 心跳超时，已标记为离线")
 
             # 触发告警回调
             for callback in self.alert_callbacks:

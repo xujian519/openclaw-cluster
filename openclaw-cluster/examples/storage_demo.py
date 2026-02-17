@@ -3,6 +3,7 @@ OpenClaw 集群系统 - 存储层使用示例
 
 演示如何使用状态管理器和数据仓库
 """
+
 import asyncio
 import sys
 from datetime import datetime
@@ -11,7 +12,7 @@ from pathlib import Path
 # 添加父目录到Python路径
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from common.models import Task, TaskType, TaskStatus, TaskPriority, NodeInfo, NodeStatus
+from common.models import NodeInfo, NodeStatus, Task, TaskPriority, TaskStatus, TaskType
 from storage.database import Database
 from storage.state_manager import StateManager
 

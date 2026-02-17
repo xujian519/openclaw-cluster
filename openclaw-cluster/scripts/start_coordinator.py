@@ -4,19 +4,20 @@ OpenClaw 集群系统 - 协调器启动脚本
 
 启动协调器服务，管理整个集群
 """
+
+import argparse
 import asyncio
-import sys
 import os
 import signal
-import argparse
+import sys
 from pathlib import Path
 
 # 添加项目根目录到路径
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from common.logging import get_logger
 from common.config import Config, load_config
+from common.logging import get_logger
 from coordinator.coordinator_service import CoordinatorService
 
 logger = get_logger(__name__)
@@ -71,6 +72,7 @@ class CoordinatorRunner:
 
     def _create_default_config(self) -> Config:
         """创建默认配置"""
+
         class Storage:
             type = "sqlite"
             path = "./data/cluster.db"
@@ -104,6 +106,7 @@ class CoordinatorRunner:
 
     def _setup_signal_handlers(self):
         """设置信号处理器"""
+
         def signal_handler(sig, frame):
             logger.info(f"收到信号: {sig}, 正在关闭...")
             self.shutdown_event.set()
@@ -116,7 +119,8 @@ async def main():
     """主函数"""
     parser = argparse.ArgumentParser(description="OpenClaw 集群协调器")
     parser.add_argument(
-        "-c", "--config",
+        "-c",
+        "--config",
         type=str,
         default=None,
         help="配置文件路径",

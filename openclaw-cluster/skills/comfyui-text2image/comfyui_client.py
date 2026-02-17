@@ -3,12 +3,10 @@ ComfyUI 文生图技能实现
 
 与本地 ComfyUI 服务器通信，执行文本到图像生成任务
 """
+
 import asyncio
-import json
-import uuid
-from pathlib import Path
-from typing import Optional, Dict, Any, List
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 import aiohttp
 

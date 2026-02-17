@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """OpenClaw 集群系统 - 任务调度验证"""
+
 import asyncio
-import sys
 import os
+import sys
 
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from common.models import Task, TaskType, TaskStatus, TaskPriority, NodeInfo, NodeStatus
+from common.models import NodeInfo, NodeStatus, Task, TaskPriority, TaskType
+from scheduler.task_queue import MultiLevelTaskQueue, TaskQueue
+from scheduler.task_scheduler import SchedulingStrategy, TaskScheduler
 from storage.database import Database
 from storage.state_manager import StateManager
-from scheduler.task_queue import TaskQueue, MultiLevelTaskQueue, PrioritizedTask
-from scheduler.task_scheduler import TaskScheduler, SchedulingStrategy
 
 
 async def test_task_queue():
@@ -58,7 +59,7 @@ async def test_task_queue():
 
     # 获取统计信息
     stats = await queue.get_stats()
-    print(f"✅ 队列统计:")
+    print("✅ 队列统计:")
     print(f"   队列大小: {stats['queue_size']}")
     print(f"   总入队: {stats['total_queued']}")
     print(f"   总出队: {stats['total_dequeued']}")
@@ -78,7 +79,12 @@ async def test_multi_level_queue():
     queue = MultiLevelTaskQueue(max_size_per_level=10)
 
     # 创建不同优先级的任务
-    for priority in [TaskPriority.LOW, TaskPriority.NORMAL, TaskPriority.HIGH, TaskPriority.CRITICAL]:
+    for priority in [
+        TaskPriority.LOW,
+        TaskPriority.NORMAL,
+        TaskPriority.HIGH,
+        TaskPriority.CRITICAL,
+    ]:
         task = Task.create(
             task_type=TaskType.INTERACTIVE,
             name=f"{priority.value}_task",
@@ -100,12 +106,17 @@ async def test_multi_level_queue():
             print(f"✅ 取出: {task.priority.value} - {task.task_id}")
 
     # 验证顺序
-    expected = [TaskPriority.CRITICAL.value, TaskPriority.HIGH.value, TaskPriority.NORMAL.value, TaskPriority.LOW.value]
+    expected = [
+        TaskPriority.CRITICAL.value,
+        TaskPriority.HIGH.value,
+        TaskPriority.NORMAL.value,
+        TaskPriority.LOW.value,
+    ]
     assert order == expected, f"优先级顺序错误: {order} != {expected}"
 
     # 获取统计
     stats = await queue.get_all_stats()
-    print(f"✅ 多级队列统计:")
+    print("✅ 多级队列统计:")
     print(f"   总大小: {stats['total_size']}")
     print(f"   总容量: {stats['total_capacity']}")
     print(f"   利用率: {stats['overall_utilization']:.1f}%")
@@ -171,14 +182,14 @@ async def test_scheduler():
 
     # 获取调度器统计
     stats = await scheduler.get_scheduler_stats()
-    print(f"✅ 调度器统计:")
+    print("✅ 调度器统计:")
     print(f"   总调度: {stats['total_scheduled']}")
     print(f"   失败: {stats['total_failed']}")
     print(f"   无节点: {stats['total_no_nodes']}")
 
     # 获取队列统计
     queue_stats = await scheduler.get_queue_stats()
-    print(f"✅ 队列统计:")
+    print("✅ 队列统计:")
     print(f"   队列大小: {queue_stats['total_size']}")
 
     # 停止调度器
@@ -255,7 +266,9 @@ async def test_scheduling_strategies():
         updated_task = await state_manager.get_task(task.task_id)
         if updated_task and updated_task.assigned_node:
             assigned_node = await state_manager.get_node(updated_task.assigned_node)
-            print(f"   ✅ 任务分配到: {assigned_node.hostname} (运行: {assigned_node.running_tasks})")
+            print(
+                f"   ✅ 任务分配到: {assigned_node.hostname} (运行: {assigned_node.running_tasks})"
+            )
 
         await scheduler.stop()
 
@@ -294,6 +307,7 @@ async def main():
     except Exception as e:
         print(f"\n❌ 测试失败: {e}")
         import traceback
+
         traceback.print_exc()
 
 

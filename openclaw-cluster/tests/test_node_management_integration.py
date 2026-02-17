@@ -3,22 +3,21 @@ OpenClaw 集群系统 - 节点管理和心跳集成测试
 
 完整测试节点注册、心跳监控和API功能
 """
+
 import asyncio
-import pytest
-import tempfile
 import shutil
-from pathlib import Path
+import tempfile
 from datetime import datetime
+from pathlib import Path
+
+import pytest
 
 from common.config import Config
 from common.models import NodeStatus
-from storage.database import Database
-from storage.repositories import NodeRepository
-from coordinator.node_service import NodeRegistrationService
-from coordinator.heartbeat_monitor import HeartbeatMonitor
 from coordinator.api import create_api_app
-from worker.heartbeat import HeartbeatClient
-
+from coordinator.heartbeat_monitor import HeartbeatMonitor
+from coordinator.node_service import NodeRegistrationService
+from storage.database import Database
 
 # ========== 测试固件 ==========
 
@@ -48,11 +47,11 @@ def test_config():
         cluster_name="test-cluster",
         storage=type("obj", (object,), {"type": "sqlite", "path": ":memory:"}),
         coordinator=type("obj", (object,), {"host": "127.0.0.1", "port": 8888}),
-        worker=type("obj", (object,), {
-            "max_concurrent_tasks": 5,
-            "heartbeat_interval": 5,
-            "skills_dir": "./skills"
-        }),
+        worker=type(
+            "obj",
+            (object,),
+            {"max_concurrent_tasks": 5, "heartbeat_interval": 5, "skills_dir": "./skills"},
+        ),
     )
 
 
@@ -178,16 +177,13 @@ async def test_list_nodes(node_service: NodeRegistrationService):
     """测试列出所有节点"""
     # 注册多个节点
     await node_service.register_node(
-        hostname="worker-01", platform="linux", arch="x64",
-        available_skills=["python"]
+        hostname="worker-01", platform="linux", arch="x64", available_skills=["python"]
     )
     await node_service.register_node(
-        hostname="worker-02", platform="macos", arch="arm64",
-        available_skills=["python", "ml"]
+        hostname="worker-02", platform="macos", arch="arm64", available_skills=["python", "ml"]
     )
     await node_service.register_node(
-        hostname="worker-03", platform="windows", arch="x64",
-        available_skills=["data-processing"]
+        hostname="worker-03", platform="windows", arch="x64", available_skills=["data-processing"]
     )
 
     # 获取所有节点
@@ -204,16 +200,19 @@ async def test_find_nodes_by_skill(node_service: NodeRegistrationService):
     """测试按技能查找节点"""
     # 注册具有不同技能的节点
     await node_service.register_node(
-        hostname="python-worker", platform="linux", arch="x64",
-        available_skills=["python", "flask"]
+        hostname="python-worker", platform="linux", arch="x64", available_skills=["python", "flask"]
     )
     await node_service.register_node(
-        hostname="ml-worker", platform="linux", arch="x64",
-        available_skills=["python", "ml", "tensorflow"]
+        hostname="ml-worker",
+        platform="linux",
+        arch="x64",
+        available_skills=["python", "ml", "tensorflow"],
     )
     await node_service.register_node(
-        hostname="data-worker", platform="linux", arch="x64",
-        available_skills=["data-analysis", "pandas"]
+        hostname="data-worker",
+        platform="linux",
+        arch="x64",
+        available_skills=["data-analysis", "pandas"],
     )
 
     # 查找具有python技能的节点
@@ -235,6 +234,7 @@ async def test_heartbeat_update(heartbeat_monitor: HeartbeatMonitor):
     # 创建测试节点
     node_repo = heartbeat_monitor.node_repo
     from common.models import NodeInfo
+
     node = NodeInfo(
         node_id="test-node-01",
         hostname="test-worker",
@@ -271,6 +271,7 @@ async def test_node_health_status(heartbeat_monitor: HeartbeatMonitor):
     # 创建测试节点
     node_repo = heartbeat_monitor.node_repo
     from common.models import NodeInfo
+
     node = NodeInfo(
         node_id="test-node-02",
         hostname="test-worker-2",
@@ -337,8 +338,9 @@ async def test_heartbeat_timeout_detection(heartbeat_monitor: HeartbeatMonitor):
     """测试心跳超时检测"""
     # 创建一个很久没发送心跳的节点
     node_repo = heartbeat_monitor.node_repo
-    from common.models import NodeInfo
     from datetime import timedelta
+
+    from common.models import NodeInfo
 
     old_time = datetime.now() - timedelta(seconds=120)  # 120秒前
 
@@ -375,9 +377,7 @@ async def test_api_node_registration(node_service: NodeRegistrationService):
     """测试API节点注册端点"""
     from fastapi.testclient import TestClient
 
-    heartbeat_monitor = HeartbeatMonitor(
-        node_service.db, heartbeat_timeout=30, check_interval=10
-    )
+    heartbeat_monitor = HeartbeatMonitor(node_service.db, heartbeat_timeout=30, check_interval=10)
     app = create_api_app(node_service, heartbeat_monitor)
     client = TestClient(app)
 
@@ -408,17 +408,13 @@ async def test_api_get_nodes(node_service: NodeRegistrationService):
 
     # 注册一些节点
     await node_service.register_node(
-        hostname="worker-01", platform="linux", arch="x64",
-        available_skills=["python"]
+        hostname="worker-01", platform="linux", arch="x64", available_skills=["python"]
     )
     await node_service.register_node(
-        hostname="worker-02", platform="macos", arch="arm64",
-        available_skills=["python", "ml"]
+        hostname="worker-02", platform="macos", arch="arm64", available_skills=["python", "ml"]
     )
 
-    heartbeat_monitor = HeartbeatMonitor(
-        node_service.db, heartbeat_timeout=30, check_interval=10
-    )
+    heartbeat_monitor = HeartbeatMonitor(node_service.db, heartbeat_timeout=30, check_interval=10)
     app = create_api_app(node_service, heartbeat_monitor)
     client = TestClient(app)
 
@@ -447,14 +443,11 @@ async def test_api_health_endpoints(node_service: NodeRegistrationService):
     """测试API健康检查端点"""
     from fastapi.testclient import TestClient
 
-    heartbeat_monitor = HeartbeatMonitor(
-        node_service.db, heartbeat_timeout=30, check_interval=10
-    )
+    heartbeat_monitor = HeartbeatMonitor(node_service.db, heartbeat_timeout=30, check_interval=10)
 
     # 注册一个节点
     result = await node_service.register_node(
-        hostname="health-test-node", platform="linux", arch="x64",
-        available_skills=["python"]
+        hostname="health-test-node", platform="linux", arch="x64", available_skills=["python"]
     )
     node_id = result["node_id"]
 
@@ -500,9 +493,7 @@ async def test_full_node_lifecycle(node_service: NodeRegistrationService):
     assert node.running_tasks == 0
 
     # 3. 模拟心跳更新
-    heartbeat_monitor = HeartbeatMonitor(
-        node_service.db, heartbeat_timeout=30, check_interval=10
-    )
+    heartbeat_monitor = HeartbeatMonitor(node_service.db, heartbeat_timeout=30, check_interval=10)
     await heartbeat_monitor.update_node_heartbeat(
         node_id=node_id,
         cpu_usage=50.0,

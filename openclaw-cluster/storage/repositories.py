@@ -3,27 +3,28 @@ OpenClaw 集群系统 - 数据仓库层
 
 实现Repository模式，提供类型化的数据访问接口
 """
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
-import json
 
+from datetime import datetime, timedelta
+from typing import List, Optional
+
+from common.logging import get_logger
 from common.models import (
-    Task,
-    TaskStatus,
-    TaskType,
-    TaskPriority,
     NodeInfo,
     NodeStatus,
+    Task,
+    TaskPriority,
+    TaskStatus,
+    TaskType,
 )
-from common.logging import get_logger
+
 from .database import (
     Database,
-    _serialize_datetime,
     _deserialize_datetime,
-    _serialize_list,
-    _deserialize_list,
-    _serialize_dict,
     _deserialize_dict,
+    _deserialize_list,
+    _serialize_datetime,
+    _serialize_dict,
+    _serialize_list,
 )
 
 logger = get_logger(__name__)
@@ -114,9 +115,7 @@ class TaskRepository:
             任务对象或None
         """
         conn = await self.db.connect()
-        async with conn.execute(
-            "SELECT * FROM tasks WHERE task_id = ?", (task_id,)
-        ) as cursor:
+        async with conn.execute("SELECT * FROM tasks WHERE task_id = ?", (task_id,)) as cursor:
             row = await cursor.fetchone()
             if row:
                 return self._row_to_task(row)
@@ -197,9 +196,7 @@ class TaskRepository:
             logger.error(f"任务删除失败 {task_id}: {e}")
             return False
 
-    async def list_by_status(
-        self, status: TaskStatus, limit: Optional[int] = None
-    ) -> List[Task]:
+    async def list_by_status(self, status: TaskStatus, limit: Optional[int] = None) -> List[Task]:
         """
         按状态查询任务
 
@@ -311,9 +308,7 @@ class TaskRepository:
                 result = await cursor.fetchone()
                 return result[0] if result else 0
 
-    async def cleanup_old_tasks(
-        self, days: int = 30, keep_status: List[TaskStatus] = None
-    ) -> int:
+    async def cleanup_old_tasks(self, days: int = 30, keep_status: List[TaskStatus] = None) -> int:
         """
         清理旧任务
 
@@ -338,9 +333,7 @@ class TaskRepository:
             DELETE FROM tasks
             WHERE completed_at < ?
             AND status NOT IN ({})
-            """.format(
-                ",".join(["?"] * len(exclude_statuses))
-            ),
+            """.format(",".join(["?"] * len(exclude_statuses))),
             [cutoff_date.isoformat()] + exclude_statuses,
         )
 
@@ -461,9 +454,7 @@ class NodeRepository:
             节点对象或None
         """
         conn = await self.db.connect()
-        async with conn.execute(
-            "SELECT * FROM nodes WHERE node_id = ?", (node_id,)
-        ) as cursor:
+        async with conn.execute("SELECT * FROM nodes WHERE node_id = ?", (node_id,)) as cursor:
             row = await cursor.fetchone()
             if row:
                 return self._row_to_node(row)
@@ -554,9 +545,7 @@ class NodeRepository:
             节点列表
         """
         conn = await self.db.connect()
-        async with conn.execute(
-            "SELECT * FROM nodes WHERE status = ?", (status.value,)
-        ) as cursor:
+        async with conn.execute("SELECT * FROM nodes WHERE status = ?", (status.value,)) as cursor:
             rows = await cursor.fetchall()
 
         return [self._row_to_node(row) for row in rows]

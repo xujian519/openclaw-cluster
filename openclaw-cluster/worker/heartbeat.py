@@ -1,17 +1,18 @@
 """
 OpenClaw 集群系统 - 工作节点心跳模块
-
-负责定期向协调器发送心跳，上报节点状态和系统信息
 """
-import asyncio
-import socket
-import platform
-import psutil
-from typing import Optional, Dict, Any
-from datetime import datetime
 
-from common.logging import get_logger
+import asyncio
+import platform
+import re
+import socket
+from typing import Any, Callable, Dict, Optional
+
+import psutil
+
 from common.config import Config
+from common.http_client import get_session
+from common.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -29,6 +30,7 @@ class HeartbeatClient:
         coordinator_url: str,
         node_id: str,
         available_skills: list,
+        get_running_tasks: Optional[Callable[[], int]] = None,
     ):
         """
         初始化心跳客户端
@@ -38,6 +40,7 @@ class HeartbeatClient:
             coordinator_url: 协调器URL
             node_id: 节点ID
             available_skills: 可用技能列表
+            get_running_tasks: 获取运行中任务数的回调函数
         """
         self.config = config
         self.coordinator_url = coordinator_url.rstrip("/")
@@ -47,6 +50,7 @@ class HeartbeatClient:
         self.running = False
         self.heartbeat_task: Optional[asyncio.Task] = None
         self.registered = False
+        self._get_running_tasks = get_running_tasks
 
         # 系统信息缓存
         self.system_info = self._collect_system_info()
@@ -210,100 +214,68 @@ class HeartbeatClient:
             }
 
     async def _register_node(self) -> bool:
-        """
-        注册节点到协调器
-
-        Returns:
-            是否注册成功
-        """
-        import aiohttp
-        import re
-
         try:
-            # 将localhost替换为127.0.0.1以避免IPv6连接问题
-            coordinator_url = re.sub(r'://localhost:', '://127.0.0.1:', self.coordinator_url)
+            coordinator_url = re.sub(r"://localhost:", "://127.0.0.1:", self.coordinator_url)
+            session = await get_session()
 
-            timeout = aiohttp.ClientTimeout(total=10, connect=5)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.post(
-                    f"{coordinator_url}/api/v1/nodes/register",
-                    json={
-                        "hostname": self.system_info["hostname"],
-                        "platform": self.system_info["platform"],
-                        "arch": self.system_info["arch"],
-                        "available_skills": self.available_skills,
-                        "ip_address": self.system_info["ip_address"],
-                        "max_concurrent_tasks": self.config.worker.max_concurrent_tasks,
-                        "node_id": self.node_id,
-                    },
-                ) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        if data["success"]:
-                            logger.info(
-                                f"节点注册成功: {data.get('node_id')} - "
-                                f"{data.get('message')}"
-                            )
-                            return True
-                        else:
-                            logger.error(f"节点注册失败: {data.get('message')}")
-                            return False
-                    else:
-                        text = await response.text()
-                        logger.error(
-                            f"节点注册请求失败: HTTP {response.status} - "
-                            f"{text}"
+            async with session.post(
+                f"{coordinator_url}/api/v1/nodes/register",
+                json={
+                    "hostname": self.system_info["hostname"],
+                    "platform": self.system_info["platform"],
+                    "arch": self.system_info["arch"],
+                    "available_skills": self.available_skills,
+                    "ip_address": self.system_info["ip_address"],
+                    "max_concurrent_tasks": self.config.worker.max_concurrent_tasks,
+                    "node_id": self.node_id,
+                },
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    if data["success"]:
+                        logger.info(
+                            f"节点注册成功: {data.get('node_id')} - " f"{data.get('message')}"
                         )
+                        return True
+                    else:
+                        logger.error(f"节点注册失败: {data.get('message')}")
                         return False
+                else:
+                    text = await response.text()
+                    logger.error(f"节点注册请求失败: HTTP {response.status} - " f"{text}")
+                    return False
 
         except Exception as e:
             logger.error(f"节点注册时发生错误: {e}")
             return False
 
     async def _send_heartbeat(self) -> bool:
-        """
-        发送心跳到协调器
-
-        Returns:
-            是否发送成功
-        """
-        import aiohttp
-        import re
-
         try:
-            # 获取当前资源使用情况
             usage = self._get_resource_usage()
+            running_tasks = self._get_running_tasks() if self._get_running_tasks else 0
+            coordinator_url = re.sub(r"://localhost:", "://127.0.0.1:", self.coordinator_url)
+            session = await get_session()
 
-            # TODO: 获取实际运行的任务数
-            running_tasks = 0
-
-            # 将localhost替换为127.0.0.1以避免IPv6连接问题
-            coordinator_url = re.sub(r'://localhost:', '://127.0.0.1:', self.coordinator_url)
-
-            timeout = aiohttp.ClientTimeout(total=5, connect=3)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.post(
-                    f"{coordinator_url}/api/v1/nodes/{self.node_id}/heartbeat",
-                    json={
-                        "cpu_usage": usage["cpu_usage"],
-                        "memory_usage": usage["memory_usage"],
-                        "disk_usage": usage["disk_usage"],
-                        "running_tasks": running_tasks,
-                    },
-                ) as response:
-                    if response.status == 200:
-                        logger.debug(
-                            f"心跳发送成功 - CPU: {usage['cpu_usage']}%, "
-                            f"内存: {usage['memory_usage']}%, "
-                            f"磁盘: {usage['disk_usage']}%"
-                        )
-                        return True
-                    else:
-                        text = await response.text()
-                        logger.warning(
-                            f"心跳发送失败: HTTP {response.status} - {text}"
-                        )
-                        return False
+            async with session.post(
+                f"{coordinator_url}/api/v1/nodes/{self.node_id}/heartbeat",
+                json={
+                    "cpu_usage": usage["cpu_usage"],
+                    "memory_usage": usage["memory_usage"],
+                    "disk_usage": usage["disk_usage"],
+                    "running_tasks": running_tasks,
+                },
+            ) as response:
+                if response.status == 200:
+                    logger.debug(
+                        f"心跳发送成功 - CPU: {usage['cpu_usage']}%, "
+                        f"内存: {usage['memory_usage']}%, "
+                        f"磁盘: {usage['disk_usage']}%"
+                    )
+                    return True
+                else:
+                    text = await response.text()
+                    logger.warning(f"心跳发送失败: HTTP {response.status} - {text}")
+                    return False
 
         except asyncio.TimeoutError:
             logger.warning("心跳发送超时")
@@ -313,23 +285,17 @@ class HeartbeatClient:
             return False
 
     async def _notify_shutdown(self):
-        """通知协调器节点即将关闭"""
-        import aiohttp
-        import re
-
         try:
-            # 将localhost替换为127.0.0.1以避免IPv6连接问题
-            coordinator_url = re.sub(r'://localhost:', '://127.0.0.1:', self.coordinator_url)
+            coordinator_url = re.sub(r"://localhost:", "://127.0.0.1:", self.coordinator_url)
+            session = await get_session()
 
-            timeout = aiohttp.ClientTimeout(total=5, connect=3)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.post(
-                    f"{coordinator_url}/api/v1/nodes/{self.node_id}/shutdown"
-                ) as response:
-                    if response.status == 200:
-                        logger.info("已通知协调器节点关闭")
-                    else:
-                        logger.warning(f"通知节点关闭失败: HTTP {response.status}")
+            async with session.post(
+                f"{coordinator_url}/api/v1/nodes/{self.node_id}/shutdown"
+            ) as response:
+                if response.status == 200:
+                    logger.info("已通知协调器节点关闭")
+                else:
+                    logger.warning(f"通知节点关闭失败: HTTP {response.status}")
 
         except Exception as e:
             logger.error(f"通知节点关闭时发生错误: {e}")
@@ -363,22 +329,12 @@ async def create_heartbeat_client(
     coordinator_url: str,
     node_id: str,
     available_skills: list,
+    get_running_tasks: Optional[Callable[[], int]] = None,
 ) -> HeartbeatClient:
-    """
-    创建心跳客户端
-
-    Args:
-        config: 配置对象
-        coordinator_url: 协调器URL
-        node_id: 节点ID
-        available_skills: 可用技能列表
-
-    Returns:
-        心跳客户端实例
-    """
     return HeartbeatClient(
         config=config,
         coordinator_url=coordinator_url,
         node_id=node_id,
         available_skills=available_skills,
+        get_running_tasks=get_running_tasks,
     )

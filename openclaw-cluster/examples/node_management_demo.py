@@ -4,21 +4,17 @@ OpenClaw 集群系统 - 节点管理和心跳机制演示
 
 展示完整的节点注册、心跳监控和API管理功能
 """
-import asyncio
-import tempfile
-import shutil
-from pathlib import Path
-import httpx
-from datetime import datetime
 
-from common.config import Config
-from common.models import NodeStatus
-from storage.database import Database
-from coordinator.node_service import NodeRegistrationService
-from coordinator.heartbeat_monitor import HeartbeatMonitor
+import asyncio
+import shutil
+import tempfile
+from pathlib import Path
+
 from coordinator.api import create_api_app
+from coordinator.heartbeat_monitor import HeartbeatMonitor
+from coordinator.node_service import NodeRegistrationService
+from storage.database import Database
 from worker.heartbeat import HeartbeatClient
-import uvicorn
 
 
 async def demo_coordinator():
@@ -36,11 +32,7 @@ async def demo_coordinator():
 
     # 创建服务
     node_service = NodeRegistrationService(database)
-    heartbeat_monitor = HeartbeatMonitor(
-        database,
-        heartbeat_timeout=30,
-        check_interval=10
-    )
+    heartbeat_monitor = HeartbeatMonitor(database, heartbeat_timeout=30, check_interval=10)
 
     print("\n" + "-" * 60)
     print("1. 节点注册演示")
@@ -53,21 +45,21 @@ async def demo_coordinator():
             "platform": "linux",
             "arch": "x64",
             "skills": ["python", "fastapi", "asyncio"],
-            "tags": ["gpu", "high-memory"]
+            "tags": ["gpu", "high-memory"],
         },
         {
             "hostname": "worker-ml-01",
             "platform": "linux",
             "arch": "x64",
             "skills": ["python", "tensorflow", "pytorch"],
-            "tags": ["gpu", "ml"]
+            "tags": ["gpu", "ml"],
         },
         {
             "hostname": "worker-data-01",
             "platform": "macos",
             "arch": "arm64",
             "skills": ["python", "pandas", "numpy"],
-            "tags": ["data-processing"]
+            "tags": ["data-processing"],
         },
     ]
 
@@ -140,7 +132,7 @@ async def demo_coordinator():
 
     # 查询集群健康状态
     cluster_health = await heartbeat_monitor.get_cluster_health_summary()
-    print(f"\n  集群健康状态:")
+    print("\n  集群健康状态:")
     print(f"    - 总节点数: {cluster_health['total_nodes']}")
     print(f"    - 在线节点: {cluster_health['online_nodes']}")
     print(f"    - 总容量: {cluster_health['total_capacity']}")
@@ -157,9 +149,9 @@ async def demo_coordinator():
     # 打印可用路由
     print("\n  可用的API端点:")
     for route in app.routes:
-        if hasattr(route, 'methods') and hasattr(route, 'path'):
-            if route.path.startswith('/api/v1'):
-                methods = ', '.join(sorted(route.methods))
+        if hasattr(route, "methods") and hasattr(route, "path"):
+            if route.path.startswith("/api/v1"):
+                methods = ", ".join(sorted(route.methods))
                 print(f"    {methods:8} {route.path}")
 
     print("\n" + "-" * 60)
@@ -167,41 +159,42 @@ async def demo_coordinator():
     print("-" * 60)
 
     from fastapi.testclient import TestClient
+
     client = TestClient(app)
 
     # 测试健康检查
     response = client.get("/health")
-    print(f"\n  GET /health")
+    print("\n  GET /health")
     print(f"    状态码: {response.status_code}")
     print(f"    响应: {response.json()}")
 
     # 测试获取所有节点
     response = client.get("/api/v1/nodes")
-    print(f"\n  GET /api/v1/nodes")
+    print("\n  GET /api/v1/nodes")
     print(f"    状态码: {response.status_code}")
     nodes = response.json()
     print(f"    返回节点数: {len(nodes)}")
 
     # 测试获取在线节点
     response = client.get("/api/v1/nodes/online")
-    print(f"\n  GET /api/v1/nodes/online")
+    print("\n  GET /api/v1/nodes/online")
     print(f"    状态码: {response.status_code}")
     online = response.json()
     print(f"    在线节点数: {len(online)}")
 
     # 测试按技能查找
     response = client.get("/api/v1/nodes/skills/python")
-    print(f"\n  GET /api/v1/nodes/skills/python")
+    print("\n  GET /api/v1/nodes/skills/python")
     print(f"    状态码: {response.status_code}")
     python_nodes = response.json()
     print(f"    Python节点数: {len(python_nodes)}")
 
     # 测试集群健康状态
     response = client.get("/api/v1/cluster/health")
-    print(f"\n  GET /api/v1/cluster/health")
+    print("\n  GET /api/v1/cluster/health")
     print(f"    状态码: {response.status_code}")
     health_summary = response.json()
-    print(f"    集群状态:")
+    print("    集群状态:")
     print(f"      - 总节点: {health_summary['total_nodes']}")
     print(f"      - 在线: {health_summary['online_nodes']}")
     print(f"      - 容量利用率: {health_summary['capacity_utilization']:.1f}%")
@@ -220,7 +213,7 @@ async def demo_coordinator():
 
     # 手动执行心跳检查
     check_result = await heartbeat_monitor.check_heartbeat()
-    print(f"  ✓ 心跳检查完成")
+    print("  ✓ 心跳检查完成")
     print(f"    - 超时节点数: {check_result['timeout_nodes_count']}")
     print(f"    - 所有节点健康: {'是' if check_result['all_nodes_healthy'] else '否'}")
 

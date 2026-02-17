@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """OpenClaw 集群系统 - 节点管理验证"""
+
 import asyncio
-import sys
 import os
+import sys
 
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from common.models import Task, TaskType, TaskStatus, NodeInfo, NodeStatus
+from common.models import NodeInfo, NodeStatus
 from storage.database import Database
 from storage.state_manager import StateManager
 
@@ -43,7 +44,7 @@ async def main():
     print("\n[测试2] 节点查询")
     retrieved = await state_manager.get_node(node.node_id)
     if retrieved:
-        print(f"✅ 节点查询成功")
+        print("✅ 节点查询成功")
         print(f"   主机: {retrieved.hostname}")
         print(f"   状态: {retrieved.status.value}")
         print(f"   技能: {retrieved.available_skills}")
@@ -60,10 +61,7 @@ async def main():
     # 测试心跳更新
     print("\n[测试4] 心跳更新")
     await state_manager.update_heartbeat(
-        node.node_id,
-        cpu_usage=45.5,
-        memory_usage=62.3,
-        running_tasks=2
+        node.node_id, cpu_usage=45.5, memory_usage=62.3, running_tasks=2
     )
     print("✅ 心跳更新成功")
 
@@ -77,7 +75,7 @@ async def main():
     # 测试获取所有节点
     print("\n[测试6] 获取集群状态")
     state = await state_manager.get_state()
-    print(f"✅ 集群状态:")
+    print("✅ 集群状态:")
     print(f"   总节点: {state.total_nodes}")
     print(f"   在线节点: {state.online_nodes}")
     print(f"   总任务: {state.total_tasks}")
@@ -85,7 +83,7 @@ async def main():
     # 测试任务统计
     print("\n[测试7] 任务统计")
     stats = await state_manager.get_task_stats()
-    print(f"✅ 任务统计:")
+    print("✅ 任务统计:")
     for status, count in stats.items():
         print(f"   {status}: {count}")
 

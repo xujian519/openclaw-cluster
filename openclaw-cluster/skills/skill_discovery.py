@@ -3,15 +3,14 @@ OpenClaw 集群系统 - 技能发现服务
 
 自动发现和注册节点上的技能
 """
+
 import asyncio
-import os
 import json
-from typing import Dict, List, Optional, Set
 from pathlib import Path
-from datetime import datetime
+from typing import Dict, List, Optional
 
 from common.logging import get_logger
-from skills.skill_registry import SkillRegistry, SkillMetadata, SkillCategory
+from skills.skill_registry import SkillCategory, SkillMetadata, SkillRegistry
 
 logger = get_logger(__name__)
 
@@ -128,16 +127,14 @@ class SkillDiscovery:
 
             try:
                 # 读取技能配置
-                with open(config_file, "r", encoding="utf-8") as f:
+                with open(config_file, encoding="utf-8") as f:
                     config = json.load(f)
 
                 # 创建技能元数据
                 metadata = SkillMetadata(
                     name=config.get("name", skill_name),
                     description=config.get("description", ""),
-                    category=SkillCategory(
-                        config.get("category", SkillCategory.CUSTOM)
-                    ),
+                    category=SkillCategory(config.get("category", SkillCategory.CUSTOM)),
                     version=config.get("version", "1.0.0"),
                     author=config.get("author", ""),
                     dependencies=config.get("dependencies", []),
@@ -150,9 +147,7 @@ class SkillDiscovery:
 
                 # 注册技能实例
                 if self._node_id:
-                    await self.skill_registry.register_skill_instance(
-                        metadata.name, self._node_id
-                    )
+                    await self.skill_registry.register_skill_instance(metadata.name, self._node_id)
 
                 discovered.add(metadata.name)
                 self._discovered_skills[metadata.name] = metadata
@@ -165,9 +160,7 @@ class SkillDiscovery:
         if discovered:
             logger.info(f"发现 {len(discovered)} 个技能: {', '.join(discovered)}")
 
-    async def register_local_skills(
-        self, skills: List[Dict[str, any]]
-    ) -> int:
+    async def register_local_skills(self, skills: List[Dict[str, any]]) -> int:
         """
         手动注册本地技能
 
@@ -184,9 +177,7 @@ class SkillDiscovery:
                 metadata = SkillMetadata(
                     name=skill_config.get("name", ""),
                     description=skill_config.get("description", ""),
-                    category=SkillCategory(
-                        skill_config.get("category", SkillCategory.CUSTOM)
-                    ),
+                    category=SkillCategory(skill_config.get("category", SkillCategory.CUSTOM)),
                     version=skill_config.get("version", "1.0.0"),
                     author=skill_config.get("author", ""),
                     dependencies=skill_config.get("dependencies", []),
@@ -199,9 +190,7 @@ class SkillDiscovery:
 
                 # 注册技能实例
                 if self._node_id:
-                    await self.skill_registry.register_skill_instance(
-                        metadata.name, self._node_id
-                    )
+                    await self.skill_registry.register_skill_instance(metadata.name, self._node_id)
 
                 registered += 1
 

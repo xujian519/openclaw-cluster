@@ -3,15 +3,15 @@ OpenClaw 集群系统 - NATS 客户端
 
 提供 NATS 连接和消息通信功能
 """
+
 import asyncio
-import logging
-from typing import Optional, Callable, Any
+from typing import Callable, Optional
+
 import nats
-from nats.errors import TimeoutError, NoServersError
+from nats.errors import NoServersError, TimeoutError
 
 from common.config import NATSConfig
 from common.logging import get_logger
-from .messages import Message
 
 logger = get_logger(__name__)
 
@@ -183,7 +183,9 @@ class NATSClient:
                 else:
                     sub = await self.nc.subscribe(subject)
 
-                logger.info(f"订阅主题: {subject}" + (f" (队列: {queue_group})" if queue_group else ""))
+                logger.info(
+                    f"订阅主题: {subject}" + (f" (队列: {queue_group})" if queue_group else "")
+                )
 
                 async for msg in sub.messages:
                     try:
@@ -212,7 +214,7 @@ class NATSClient:
         if task in self._subscriptions:
             task.cancel()
             self._subscriptions.remove(task)
-            logger.debug(f"已取消订阅")
+            logger.debug("已取消订阅")
 
     def is_connected(self) -> bool:
         """是否已连接"""

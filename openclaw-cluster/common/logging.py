@@ -3,9 +3,9 @@ OpenClaw 集群系统 - 日志管理
 
 提供结构化日志功能
 """
-import sys
+
 import logging
-from typing import Any
+import sys
 from datetime import datetime
 
 
@@ -33,14 +33,11 @@ class JSONFormatter(logging.Formatter):
             log_entry.update(record.extra_fields)
 
         import json
+
         return json.dumps(log_entry, ensure_ascii=False)
 
 
-def setup_logging(
-    level: str = "INFO",
-    format_type: str = "json",
-    output: str = "./logs"
-):
+def setup_logging(level: str = "INFO", format_type: str = "json", output: str = "./logs"):
     """
     设置日志系统
 
@@ -51,6 +48,7 @@ def setup_logging(
     """
     # 创建日志目录
     from pathlib import Path
+
     Path(output).mkdir(parents=True, exist_ok=True)
 
     # 获取根日志记录器
@@ -64,9 +62,7 @@ def setup_logging(
     if format_type == "json":
         formatter = JSONFormatter()
     else:
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     # 控制台处理器
     console_handler = logging.StreamHandler(sys.stdout)

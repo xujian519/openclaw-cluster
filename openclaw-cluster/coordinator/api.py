@@ -3,22 +3,22 @@ OpenClaw 集群系统 - 节点管理 REST API
 
 提供节点管理的HTTP接口，使用FastAPI实现
 """
-from typing import List, Optional
+
 from datetime import datetime
+from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, ConfigDict
-from uvicorn import Config as UvicornConfig, Server
+from pydantic import BaseModel, ConfigDict, Field
+from uvicorn import Config as UvicornConfig
+from uvicorn import Server
 
-from common.models import NodeInfo, NodeStatus
-from common.logging import get_logger
 from common.config import Config
-from storage.database import Database
-from storage.repositories import NodeRepository
-from coordinator.node_service import NodeRegistrationService
+from common.logging import get_logger
+from common.models import NodeInfo, NodeStatus
 from coordinator.heartbeat_monitor import HeartbeatMonitor
+from coordinator.node_service import NodeRegistrationService
 
 logger = get_logger(__name__)
 
@@ -28,6 +28,7 @@ logger = get_logger(__name__)
 
 class NodeRegistrationRequest(BaseModel):
     """节点注册请求模型"""
+
     hostname: str = Field(..., description="主机名")
     platform: str = Field(..., description="平台 (macos/windows/linux)")
     arch: str = Field(..., description="架构 (x64/arm64)")
@@ -58,6 +59,7 @@ class NodeRegistrationRequest(BaseModel):
 
 class NodeRegistrationResponse(BaseModel):
     """节点注册响应模型"""
+
     success: bool = Field(..., description="是否成功")
     node_id: Optional[str] = Field(None, description="节点ID")
     message: str = Field(..., description="响应消息")
@@ -67,6 +69,7 @@ class NodeRegistrationResponse(BaseModel):
 
 class NodeInfoResponse(BaseModel):
     """节点信息响应模型"""
+
     node_id: str
     hostname: str
     platform: str
@@ -92,6 +95,7 @@ class NodeInfoResponse(BaseModel):
 
 class NodeHealthResponse(BaseModel):
     """节点健康状态响应模型"""
+
     node_id: str
     hostname: Optional[str]
     healthy: bool
@@ -109,6 +113,7 @@ class NodeHealthResponse(BaseModel):
 
 class ClusterHealthResponse(BaseModel):
     """集群健康状态响应模型"""
+
     checked_at: str
     total_nodes: int
     nodes_by_status: dict
@@ -124,6 +129,7 @@ class ClusterHealthResponse(BaseModel):
 
 class HeartbeatUpdateRequest(BaseModel):
     """心跳更新请求模型"""
+
     cpu_usage: float = Field(0.0, ge=0, le=100, description="CPU使用率")
     memory_usage: float = Field(0.0, ge=0, le=100, description="内存使用率")
     disk_usage: float = Field(0.0, ge=0, le=100, description="磁盘使用率")
@@ -231,11 +237,7 @@ def create_api_app(
             )
 
             # 设置正确的HTTP状态码
-            status_code = (
-                status.HTTP_200_OK
-                if result["success"]
-                else status.HTTP_400_BAD_REQUEST
-            )
+            status_code = status.HTTP_200_OK if result["success"] else status.HTTP_400_BAD_REQUEST
 
             return JSONResponse(content=result, status_code=status_code)
 

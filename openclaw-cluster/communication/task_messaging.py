@@ -3,20 +3,21 @@ OpenClaw 集群系统 - 任务消息处理
 
 处理任务分发、结果收集和节点通信的NATS消息
 """
+
 import asyncio
-import json
-from typing import Dict, List, Optional, Callable, Awaitable, Any
+from collections.abc import Awaitable
 from datetime import datetime
+from typing import Any, Callable, Dict, List, Optional
 from uuid import uuid4
 
-from common.models import Task, TaskStatus
 from common.logging import get_logger
-from communication.nats_client import NATSClient
+from common.models import Task
 from communication.messages import (
+    NodeHeartbeatMessage,
     TaskAssignMessage,
     TaskResultMessage,
-    NodeHeartbeatMessage,
 )
+from communication.nats_client import NATSClient
 
 logger = get_logger(__name__)
 
@@ -190,10 +191,7 @@ class TaskMessaging:
 
             task_id = result_msg.task_id
 
-            logger.debug(
-                f"收到任务结果: {task_id} "
-                f"(成功: {result_msg.success})"
-            )
+            logger.debug(f"收到任务结果: {task_id} " f"(成功: {result_msg.success})")
 
             # 触发等待中的Future
             future = self._pending_tasks.get(task_id)

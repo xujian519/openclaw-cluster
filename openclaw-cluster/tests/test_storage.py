@@ -3,24 +3,26 @@ OpenClaw 集群系统 - 存储层测试
 
 测试数据库、仓库和状态管理器功能
 """
-import pytest
+
 import asyncio
+import shutil
+import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
-import tempfile
-import shutil
+
+import pytest
 
 from common.models import (
-    Task,
-    TaskStatus,
-    TaskType,
-    TaskPriority,
+    ClusterState,
     NodeInfo,
     NodeStatus,
-    ClusterState,
+    Task,
+    TaskPriority,
+    TaskStatus,
+    TaskType,
 )
 from storage.database import Database
-from storage.repositories import TaskRepository, NodeRepository
+from storage.repositories import NodeRepository, TaskRepository
 from storage.state_manager import StateManager
 
 
@@ -540,9 +542,7 @@ class TestStateManager:
         """测试更新节点状态"""
         await state_manager.add_node(sample_node)
 
-        result = await state_manager.update_node_status(
-            sample_node.node_id, NodeStatus.BUSY
-        )
+        result = await state_manager.update_node_status(sample_node.node_id, NodeStatus.BUSY)
         assert result is True
 
         retrieved = await state_manager.get_node(sample_node.node_id)

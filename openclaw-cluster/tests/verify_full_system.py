@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
 """OpenClaw 集群系统 - 完整系统验证"""
+
 import asyncio
-import sys
 import os
-import tempfile
 import shutil
-from pathlib import Path
+import sys
+import tempfile
 
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from common.models import Task, TaskType, TaskPriority, NodeInfo, NodeStatus
-from common.config import Config
+from common.models import NodeInfo, NodeStatus, Task, TaskPriority, TaskType
+from coordinator.coordinator_service import CoordinatorService
 from storage.database import Database
 from storage.state_manager import StateManager
-from coordinator.coordinator_service import CoordinatorService
 from worker.worker_service import WorkerService
 
 
@@ -62,20 +61,20 @@ async def test_coordinator_lifecycle():
 
         # 获取集群状态
         cluster_status = await coordinator.get_cluster_status()
-        print(f"✅ 集群状态:")
+        print("✅ 集群状态:")
         print(f"   总节点: {cluster_status['total_nodes']}")
         print(f"   在线节点: {cluster_status['online_nodes']}")
         print(f"   总任务: {cluster_status['total_tasks']}")
 
         # 获取技能状态
         skill_status = await coordinator.get_skill_status()
-        print(f"✅ 技能状态:")
+        print("✅ 技能状态:")
         print(f"   总技能数: {skill_status['total_skills']}")
         print(f"   类别分布: {skill_status.get('category_counts', {})}")
 
         # 获取调度器状态
         scheduler_status = await coordinator.get_scheduler_status()
-        print(f"✅ 调度器状态:")
+        print("✅ 调度器状态:")
         print(f"   策略: {scheduler_status.get('strategy', 'unknown')}")
         print(f"   运行中: {scheduler_status.get('is_running', False)}")
 
@@ -127,7 +126,7 @@ async def test_worker_lifecycle():
 
     # 获取系统指标
     metrics = await worker.get_system_metrics()
-    print(f"✅ 系统指标:")
+    print("✅ 系统指标:")
     print(f"   CPU使用率: {metrics['cpu_usage']:.1f}%")
     print(f"   内存使用率: {metrics['memory_usage']:.1f}%")
     print(f"   磁盘使用率: {metrics['disk_usage']:.1f}%")
@@ -201,7 +200,7 @@ async def test_task_submission():
 
         # 获取调度器状态
         scheduler_status = await coordinator.get_scheduler_status()
-        print(f"✅ 调度统计:")
+        print("✅ 调度统计:")
         print(f"   总调度: {scheduler_status.get('total_scheduled', 0)}")
 
         # 停止协调器
@@ -309,7 +308,7 @@ async def test_multi_node_simulation():
 
         # 获取集群状态
         cluster_status = await coordinator.get_cluster_status()
-        print(f"✅ 集群状态:")
+        print("✅ 集群状态:")
         print(f"   总节点: {cluster_status['total_nodes']}")
         print(f"   在线节点: {cluster_status['online_nodes']}")
         print(f"   总任务: {cluster_status['total_tasks']}")
@@ -354,6 +353,7 @@ async def main():
     except Exception as e:
         print(f"\n❌ 测试失败: {e}")
         import traceback
+
         traceback.print_exc()
 
 

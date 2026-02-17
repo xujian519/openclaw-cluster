@@ -3,17 +3,16 @@ OpenClaw 集群系统 - 主节点
 
 协调集群中的任务调度、状态管理和节点通信
 """
+
 import asyncio
 import signal
 import socket
 from typing import Optional
-from pathlib import Path
 
 from common.config import Config, load_config
-from common.models import ClusterState, NodeInfo, NodeStatus, Task
 from common.logging import get_logger, setup_logging
+from common.models import ClusterState, NodeInfo, NodeStatus, TaskStatus
 from communication.nats_client import NATSClient
-from communication.messages import NodeHeartbeatMessage, TaskAssignMessage, TaskResultMessage
 
 logger = get_logger(__name__)
 
@@ -97,6 +96,7 @@ class Coordinator:
         """处理节点心跳"""
         try:
             import json
+
             data = json.loads(msg.data.decode())
 
             node_id = data.get("sender_id")
@@ -104,10 +104,7 @@ class Coordinator:
                 return
 
             # 更新节点状态
-            self.cluster_state.update_node_status(
-                node_id,
-                NodeStatus(data.get("status", "online"))
-            )
+            self.cluster_state.update_node_status(node_id, NodeStatus(data.get("status", "online")))
 
             logger.debug(f"收到心跳: {node_id}")
 
@@ -118,6 +115,7 @@ class Coordinator:
         """处理任务结果"""
         try:
             import json
+
             data = json.loads(msg.data.decode())
 
             task_id = data.get("task_id")
@@ -144,6 +142,7 @@ class Coordinator:
         """处理节点注册"""
         try:
             import json
+
             data = json.loads(msg.data.decode())
 
             node_info = NodeInfo(**data)

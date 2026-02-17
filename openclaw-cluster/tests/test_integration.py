@@ -4,17 +4,18 @@ OpenClaw 集群系统 - 集成测试
 
 测试主节点和工作节点的交互
 """
+
 import asyncio
-import sys
-import os
 import json
+import os
+import sys
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from communication.nats_client import NATSClient
-from communication.messages import NodeHeartbeatMessage, TaskAssignMessage, TaskResultMessage
 from common.config import NATSConfig
+from communication.messages import NodeHeartbeatMessage, TaskAssignMessage, TaskResultMessage
+from communication.nats_client import NATSClient
 
 
 async def test_node_registration():
@@ -42,10 +43,7 @@ async def test_node_registration():
             "tags": ["mac", "development"],
         }
 
-        await worker_client.publish(
-            "cluster.node.register",
-            json.dumps(registration_data).encode()
-        )
+        await worker_client.publish("cluster.node.register", json.dumps(registration_data).encode())
         print("✅ 注册消息发送成功")
 
         await worker_client.disconnect()
@@ -70,13 +68,10 @@ async def test_heartbeat_flow():
             cpu_usage=45.5,
             memory_usage=62.3,
             running_tasks=2,
-            status="online"
+            status="online",
         )
 
-        await worker_client.publish(
-            "cluster.heartbeat",
-            heartbeat.to_json().encode()
-        )
+        await worker_client.publish("cluster.heartbeat", heartbeat.to_json().encode())
         print("✅ 心跳消息发送成功")
 
         await worker_client.disconnect()
@@ -103,13 +98,10 @@ async def test_task_assignment():
             parameters={"location": "Beijing"},
             sender_id="coordinator_main",
             receiver_id="worker_test_1",
-            timeout=30
+            timeout=30,
         )
 
-        await coordinator_client.publish(
-            "cluster.task.assign",
-            task.to_json().encode()
-        )
+        await coordinator_client.publish("cluster.task.assign", task.to_json().encode())
         print("✅ 任务分配消息发送成功")
 
         await coordinator_client.disconnect()
@@ -135,13 +127,10 @@ async def test_task_result():
             sender_id="worker_test_1",
             result={"temperature": "25°C", "condition": "晴"},
             execution_time=1.5,
-            receiver_id="coordinator_main"
+            receiver_id="coordinator_main",
         )
 
-        await worker_client.publish(
-            "cluster.task.result",
-            result.to_json().encode()
-        )
+        await worker_client.publish("cluster.task.result", result.to_json().encode())
         print("✅ 任务结果消息发送成功")
 
         await worker_client.disconnect()
@@ -230,6 +219,7 @@ async def main():
     except Exception as e:
         print(f"\n❌ 测试失败: {e}")
         import traceback
+
         traceback.print_exc()
 
 

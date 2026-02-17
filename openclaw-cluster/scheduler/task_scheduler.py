@@ -3,22 +3,24 @@ OpenClaw 集群系统 - 任务调度器
 
 实现任务到节点的调度分配和负载均衡
 """
-import asyncio
-from typing import Optional, List, Dict, Any, Set
-from datetime import datetime, timedelta
-from enum import Enum
-import random
 
-from common.models import Task, TaskStatus, TaskType, TaskPriority, NodeInfo, NodeStatus
+import asyncio
+import random
+from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional
+
 from common.logging import get_logger
-from storage.state_manager import StateManager
+from common.models import NodeInfo, Task, TaskPriority, TaskStatus
 from scheduler.task_queue import MultiLevelTaskQueue
+from storage.state_manager import StateManager
 
 logger = get_logger(__name__)
 
 
 class SchedulingStrategy(Enum):
     """调度策略枚举"""
+
     # 轮询调度
     ROUND_ROBIN = "round_robin"
     # 最少任务优先
@@ -301,11 +303,7 @@ class TaskScheduler:
 
         # 按运行任务数排序，然后按可用容量排序
         sorted_nodes = sorted(
-            nodes,
-            key=lambda n: (
-                n.running_tasks,
-                -(n.max_concurrent_tasks - n.running_tasks)
-            )
+            nodes, key=lambda n: (n.running_tasks, -(n.max_concurrent_tasks - n.running_tasks))
         )
 
         return sorted_nodes[0]
@@ -325,8 +323,7 @@ class TaskScheduler:
 
             # 任务得分 (运行任务越少越好)
             task_score = (
-                (node.max_concurrent_tasks - node.running_tasks) /
-                node.max_concurrent_tasks * 100
+                (node.max_concurrent_tasks - node.running_tasks) / node.max_concurrent_tasks * 100
             ) * self.selection_criteria.task_weight
 
             # 总分
@@ -346,9 +343,7 @@ class TaskScheduler:
 
         return random.choice(nodes)
 
-    async def _select_by_affinity(
-        self, nodes: List[NodeInfo], task: Task
-    ) -> Optional[NodeInfo]:
+    async def _select_by_affinity(self, nodes: List[NodeInfo], task: Task) -> Optional[NodeInfo]:
         """基于亲和性选择节点"""
         if not nodes:
             return None
@@ -438,7 +433,12 @@ class TaskScheduler:
         all_pending = []
 
         # 按优先级从各队列获取
-        for priority in [TaskPriority.CRITICAL, TaskPriority.HIGH, TaskPriority.NORMAL, TaskPriority.LOW]:
+        for priority in [
+            TaskPriority.CRITICAL,
+            TaskPriority.HIGH,
+            TaskPriority.NORMAL,
+            TaskPriority.LOW,
+        ]:
             if hasattr(TaskPriority, priority.value):
                 queue = await self.task_queue.get_queue(priority)
                 pending = await queue.get_pending_by_priority(limit)

@@ -3,18 +3,19 @@ OpenClaw 集群系统 - 工作节点
 
 执行任务、调用技能、上报结果
 """
+
 import asyncio
+import platform
 import signal
 import socket
-import platform
-from typing import Optional, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, Optional
 
 from common.config import Config, load_config
-from common.models import NodeInfo, NodeStatus
 from common.logging import get_logger, setup_logging
-from communication.nats_client import NATSClient
+from common.models import NodeInfo, NodeStatus
 from communication.messages import NodeHeartbeatMessage, TaskResultMessage
+from communication.nats_client import NATSClient
 
 logger = get_logger(__name__)
 
@@ -58,6 +59,7 @@ class Worker:
         """获取 Tailscale IP"""
         try:
             import subprocess
+
             result = subprocess.run(
                 ["tailscale", "ip", "-4"],
                 capture_output=True,
@@ -119,18 +121,20 @@ class Worker:
         self.node_info.registered_at = datetime.now()
 
         # 发送注册信息
-        message = json.dumps({
-            "node_id": self.node_info.node_id,
-            "hostname": self.node_info.hostname,
-            "platform": self.node_info.platform,
-            "arch": self.node_info.arch,
-            "ip_address": self.node_info.ip_address,
-            "tailscale_ip": self.node_info.tailscale_ip,
-            "port": self.node_info.port,
-            "max_concurrent_tasks": self.node_info.max_concurrent_tasks,
-            "available_skills": ["weather", "search"],  # 示例技能
-            "tags": ["mac", "development"],
-        })
+        message = json.dumps(
+            {
+                "node_id": self.node_info.node_id,
+                "hostname": self.node_info.hostname,
+                "platform": self.node_info.platform,
+                "arch": self.node_info.arch,
+                "ip_address": self.node_info.ip_address,
+                "tailscale_ip": self.node_info.tailscale_ip,
+                "port": self.node_info.port,
+                "max_concurrent_tasks": self.node_info.max_concurrent_tasks,
+                "available_skills": ["weather", "search"],  # 示例技能
+                "tags": ["mac", "development"],
+            }
+        )
 
         await self.nats_client.publish("cluster.node.register", message.encode())
         logger.info(f"节点注册成功: {self.node_id}")
@@ -152,6 +156,7 @@ class Worker:
         """处理任务分配"""
         try:
             import json
+
             data = json.loads(msg.data.decode())
 
             task_id = data.get("task_id")
@@ -223,6 +228,7 @@ class Worker:
             try:
                 # 获取系统信息
                 import psutil
+
                 cpu_usage = psutil.cpu_percent()
                 memory_usage = psutil.virtual_memory().percent
 

@@ -3,14 +3,15 @@ OpenClaw 集群系统 - 任务队列管理
 
 实现任务队列、优先级调度和队列持久化
 """
+
 import asyncio
 import heapq
-from typing import List, Optional, Dict, Any, Set
-from datetime import datetime, timedelta
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Set
 
-from common.models import Task, TaskStatus, TaskPriority, TaskType
 from common.logging import get_logger
+from common.models import Task, TaskPriority, TaskStatus, TaskType
 
 logger = get_logger(__name__)
 
@@ -22,6 +23,7 @@ class PrioritizedTask:
 
     用于在堆队列中按优先级排序
     """
+
     priority: int = field(compare=True)
     submitted_at: datetime = field(compare=True)
     task: Task = field(compare=False)
@@ -62,14 +64,10 @@ class TaskQueue:
         self._task_index: Dict[str, PrioritizedTask] = {}
 
         # 按状态分组的任务
-        self._tasks_by_status: Dict[TaskStatus, Set[str]] = {
-            status: set() for status in TaskStatus
-        }
+        self._tasks_by_status: Dict[TaskStatus, Set[str]] = {status: set() for status in TaskStatus}
 
         # 按类型分组的任务
-        self._tasks_by_type: Dict[TaskType, Set[str]] = {
-            task_type: set() for task_type in TaskType
-        }
+        self._tasks_by_type: Dict[TaskType, Set[str]] = {task_type: set() for task_type in TaskType}
 
         # 按技能需求分组的任务
         self._tasks_by_skill: Dict[str, Set[str]] = {}
@@ -232,11 +230,7 @@ class TaskQueue:
         """
         async with self._queue_lock:
             task_ids = self._tasks_by_status.get(status, set())
-            return [
-                self._task_index[tid].task
-                for tid in task_ids
-                if tid in self._task_index
-            ]
+            return [self._task_index[tid].task for tid in task_ids if tid in self._task_index]
 
     async def get_by_type(self, task_type: TaskType) -> List[Task]:
         """
@@ -250,11 +244,7 @@ class TaskQueue:
         """
         async with self._queue_lock:
             task_ids = self._tasks_by_type.get(task_type, set())
-            return [
-                self._task_index[tid].task
-                for tid in task_ids
-                if tid in self._task_index
-            ]
+            return [self._task_index[tid].task for tid in task_ids if tid in self._task_index]
 
     async def get_by_skill(self, skill: str) -> List[Task]:
         """
@@ -268,15 +258,9 @@ class TaskQueue:
         """
         async with self._queue_lock:
             task_ids = self._tasks_by_skill.get(skill, set())
-            return [
-                self._task_index[tid].task
-                for tid in task_ids
-                if tid in self._task_index
-            ]
+            return [self._task_index[tid].task for tid in task_ids if tid in self._task_index]
 
-    async def get_pending_by_priority(
-        self, limit: int = 50
-    ) -> List[Task]:
+    async def get_pending_by_priority(self, limit: int = 50) -> List[Task]:
         """
         按优先级获取待处理任务
 
@@ -288,7 +272,8 @@ class TaskQueue:
         """
         async with self._queue_lock:
             pending_tasks = [
-                pt.task for pt in self._queue
+                pt.task
+                for pt in self._queue
                 if pt.task.status in [TaskStatus.PENDING, TaskStatus.SCHEDULED]
             ]
             return pending_tasks[:limit]
@@ -335,18 +320,14 @@ class TaskQueue:
             status_counts = {}
             for status, task_ids in self._tasks_by_status.items():
                 # 只计算队列中的任务
-                count = sum(
-                    1 for tid in task_ids if tid in self._task_index
-                )
+                count = sum(1 for tid in task_ids if tid in self._task_index)
                 if count > 0:
                     status_counts[status.value] = count
 
             # 按类型统计
             type_counts = {}
             for task_type, task_ids in self._tasks_by_type.items():
-                count = sum(
-                    1 for tid in task_ids if tid in self._task_index
-                )
+                count = sum(1 for tid in task_ids if tid in self._task_index)
                 if count > 0:
                     type_counts[task_type.value] = count
 
@@ -420,8 +401,7 @@ class MultiLevelTaskQueue:
         """
         # 为每个优先级创建独立队列
         self._queues: Dict[TaskPriority, TaskQueue] = {
-            priority: TaskQueue(max_size=max_size_per_level)
-            for priority in TaskPriority
+            priority: TaskQueue(max_size=max_size_per_level) for priority in TaskPriority
         }
 
         # 优先级顺序 (从高到低)
@@ -494,7 +474,9 @@ class MultiLevelTaskQueue:
 
         stats["total_size"] = total_size
         stats["total_capacity"] = total_capacity
-        stats["overall_utilization"] = total_size / total_capacity * 100 if total_capacity > 0 else 0
+        stats["overall_utilization"] = (
+            total_size / total_capacity * 100 if total_capacity > 0 else 0
+        )
 
         return stats
 

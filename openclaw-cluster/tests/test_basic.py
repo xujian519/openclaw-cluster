@@ -4,15 +4,15 @@ OpenClaw 集群系统 - 基础功能测试
 
 测试核心组件的基本功能
 """
-import asyncio
-import sys
-import os
 
-# 添加项目根目录到路径
+import asyncio
+import os
+import sys
+from datetime import datetime
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from common.models import Task, TaskType, TaskStatus, NodeInfo, NodeStatus
-from common.config import Config
+from common.models import NodeInfo, NodeStatus, Task, TaskType
 from communication.messages import Message, MessageType
 from communication.nats_client import NATSClient
 
@@ -112,9 +112,9 @@ async def main():
     except Exception as e:
         print(f"\n❌ 测试失败: {e}")
         import traceback
+
         traceback.print_exc()
 
 
 if __name__ == "__main__":
-    from datetime import datetime
     asyncio.run(main())

@@ -1,38 +1,41 @@
 # OpenClaw 集群系统依赖包
+# 更新日期: 2026-02-17
 
 # 消息队列
 nats-py==2.13.1
 
 # 异步框架
-asyncio-mqtt==0.16.1
+asyncio-mqtt==0.16.2
 
 # 数据存储
-sqlalchemy==2.0.27
-aiosqlite==0.19.0
+sqlalchemy==2.0.46
+aiosqlite==0.22.1
 
 # Web框架
-fastapi==0.109.0
-uvicorn[standard]==0.27.0
-pydantic==2.5.3
+fastapi==0.129.0
+uvicorn[standard]==0.41.0
+pydantic==2.12.5
 
 # HTTP客户端
-httpx==0.26.0
+httpx==0.28.1
+aiohttp>=3.13.0
 
 # 工具库
-python-dotenv==1.0.0
-pyyaml==6.0.1
-click==8.1.7
+python-dotenv==1.2.1
+pyyaml==6.0.3
+click==8.3.1
 
 # 系统监控
-psutil==5.9.8
+psutil==7.2.2
 
 # 监控和日志
-structlog==24.1.0
+structlog==25.5.0
 
 # 开发工具
-pytest==7.4.4
-pytest-asyncio==0.23.3
-pytest-cov==4.1.0
-black==24.1.1
-mypy==1.8.0
-aiohttp>=3.8.0
+pytest==9.0.2
+pytest-asyncio==1.3.0
+pytest-cov==7.0.0
+black==26.1.0
+mypy==1.19.1
+ruff>=0.15.0
+pre-commit>=4.5.0

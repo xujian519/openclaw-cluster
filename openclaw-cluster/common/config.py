@@ -3,16 +3,19 @@ OpenClaw 集群系统 - 配置管理
 
 提供配置加载和验证功能
 """
+
 import os
-import yaml
-from pathlib import Path
-from typing import Dict, Any, Optional
 from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+import yaml
 
 
 @dataclass
 class NATSConfig:
     """NATS 配置"""
+
     url: str = "nats://localhost:4222"
     jetstream_enabled: bool = True
     max_reconnect: int = 10
@@ -23,6 +26,7 @@ class NATSConfig:
 @dataclass
 class StorageConfig:
     """存储配置"""
+
     type: str = "sqlite"  # sqlite or etcd
     path: str = "./data/cluster.db"
     pool_size: int = 5
@@ -31,6 +35,7 @@ class StorageConfig:
 @dataclass
 class CoordinatorConfig:
     """主节点配置"""
+
     host: str = "0.0.0.0"
     port: int = 8080
     workers: int = 4
@@ -39,6 +44,7 @@ class CoordinatorConfig:
 @dataclass
 class WorkerConfig:
     """工作节点配置"""
+
     max_concurrent_tasks: int = 5
     heartbeat_interval: int = 30
     skills_dir: str = "./skills"
@@ -47,6 +53,7 @@ class WorkerConfig:
 @dataclass
 class LoggingConfig:
     """日志配置"""
+
     level: str = "INFO"
     format: str = "json"
     output: str = "./logs"
@@ -55,6 +62,7 @@ class LoggingConfig:
 @dataclass
 class Config:
     """总配置"""
+
     # 组件配置
     nats: NATSConfig = field(default_factory=NATSConfig)
     storage: StorageConfig = field(default_factory=StorageConfig)
@@ -117,7 +125,7 @@ def load_config(config_path: str) -> Config:
     if not path.exists():
         raise FileNotFoundError(f"配置文件不存在: {config_path}")
 
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
     return Config.from_dict(data)

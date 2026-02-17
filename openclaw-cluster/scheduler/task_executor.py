@@ -3,27 +3,29 @@ OpenClaw 集群系统 - 任务执行器
 
 处理任务分发到节点和结果收集
 """
+
 import asyncio
 import json
-from typing import Optional, Dict, Any, Callable, Awaitable
+from collections.abc import Awaitable
 from datetime import datetime
 from enum import Enum
+from typing import Any, Callable, Dict, Optional
 
-from common.models import Task, TaskStatus
 from common.logging import get_logger
-from storage.state_manager import StateManager
-from communication.nats_client import NATSClient
+from common.models import Task, TaskStatus
 from communication.messages import (
     TaskAssignmentMessage,
     TaskResultMessage,
-    TaskStatusMessage,
 )
+from communication.nats_client import NATSClient
+from storage.state_manager import StateManager
 
 logger = get_logger(__name__)
 
 
 class ExecutionStatus(Enum):
     """执行状态"""
+
     PENDING = "pending"
     DISTRIBUTED = "distributed"
     EXECUTING = "executing"
@@ -125,8 +127,7 @@ class TaskExecutor:
         # 订阅任务结果
         subject = "cluster.task.results.>"
         self._result_subscription = await self.nats_client.subscribe(
-            subject,
-            self._handle_result_message
+            subject, self._handle_result_message
         )
 
         logger.info(f"任务执行器已启动，订阅结果主题: {subject}")
@@ -185,9 +186,7 @@ class TaskExecutor:
             # 等待结果
             asyncio.create_task(self._wait_for_result(task.task_id))
 
-            logger.info(
-                f"任务已分发到节点: {task.task_id} -> {node_id}"
-            )
+            logger.info(f"任务已分发到节点: {task.task_id} -> {node_id}")
 
             return True
 
@@ -412,10 +411,7 @@ class TaskExecutor:
         Returns:
             所有执行状态
         """
-        return {
-            task_id: execution.to_dict()
-            for task_id, execution in self._executions.items()
-        }
+        return {task_id: execution.to_dict() for task_id, execution in self._executions.items()}
 
     async def get_stats(self) -> Dict[str, Any]:
         """
@@ -425,7 +421,8 @@ class TaskExecutor:
             统计信息
         """
         running_count = sum(
-            1 for e in self._executions.values()
+            1
+            for e in self._executions.values()
             if e.status in [ExecutionStatus.DISTRIBUTED, ExecutionStatus.EXECUTING]
         )
 

@@ -1,0 +1,142 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openclaw-cluster"
+version = "0.1.1"
+description = "多节点 AI 代理协作平台"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "xujian", email = "xujian519@gmail.com"}
+]
+keywords = ["ai", "agent", "cluster", "distributed", "openclaw"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Framework :: AsyncIO",
+    "Topic :: System :: Distributed Computing",
+]
+
+dependencies = [
+    "nats-py>=2.13.0",
+    "asyncio-mqtt>=0.16.0",
+    "sqlalchemy>=2.0.0",
+    "aiosqlite>=0.22.0",
+    "fastapi>=0.129.0",
+    "uvicorn[standard]>=0.41.0",
+    "pydantic>=2.12.0",
+    "httpx>=0.28.0",
+    "aiohttp>=3.13.0",
+    "python-dotenv>=1.2.0",
+    "pyyaml>=6.0.0",
+    "click>=8.3.0",
+    "psutil>=7.2.0",
+    "structlog>=25.5.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.0",
+    "pytest-asyncio>=1.3.0",
+    "pytest-cov>=7.0.0",
+    "black>=26.1.0",
+    "mypy>=1.19.0",
+    "ruff>=0.12.0",
+    "pre-commit>=4.0.0",
+]
+
+[project.scripts]
+openclaw-coordinator = "coordinator.main:main"
+openclaw-worker = "worker.main:main"
+
+[project.urls]
+Homepage = "https://github.com/xujian519/openclaw-cluster"
+Documentation = "https://github.com/xujian519/openclaw-cluster#readme"
+Repository = "https://github.com/xujian519/openclaw-cluster"
+Issues = "https://github.com/xujian519/openclaw-cluster/issues"
+
+[tool.setuptools.packages.find]
+exclude = ["tests*", "docs*", "scripts*", "examples*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["coordinator", "worker", "scheduler", "storage", "communication", "common", "skills"]
+branch = true
+omit = ["*/tests/*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310", "py311", "py312"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | venv
+    | _build
+    | buck-out
+    | build
+    | dist
+)/
+'''
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = [
+    "venv/",
+    "tests/",
+    "examples/",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # function call in default argument
+    "B904",  # raise from err (style preference)
+    "B007",  # unused loop variable
+    "E402",  # module import not at top (scripts need sys.path first)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["coordinator", "worker", "scheduler", "storage", "communication", "common", "skills"]

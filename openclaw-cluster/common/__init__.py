@@ -6,17 +6,17 @@ OpenClaw 集群系统 - 公共模块
 
 __version__ = "0.1.0-alpha"
 
-from .models import (
-    Task,
-    NodeInfo,
-    ClusterState,
-    TaskStatus,
-    TaskType,
-    TaskPriority,
-    NodeStatus,
-)
 from .config import Config, load_config
 from .logging import get_logger
+from .models import (
+    ClusterState,
+    NodeInfo,
+    NodeStatus,
+    Task,
+    TaskPriority,
+    TaskStatus,
+    TaskType,
+)
 
 __all__ = [
     # 数据模型

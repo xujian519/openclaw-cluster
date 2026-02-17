@@ -3,15 +3,15 @@ OpenClaw 集群系统 - 数据库层
 
 使用SQLite和aiosqlite实现异步数据库操作
 """
-import aiosqlite
-import sqlite3
-from pathlib import Path
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-import json
-import asyncio
 
-from common.models import Task, TaskStatus, TaskType, TaskPriority, NodeInfo, NodeStatus
+import asyncio
+import json
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import aiosqlite
+
 from common.logging import get_logger
 
 logger = get_logger(__name__)
@@ -147,35 +147,23 @@ class Database:
         """)
 
         # 创建索引 - 任务表
-        await conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)"
-        )
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)")
         await conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_tasks_assigned_node ON tasks(assigned_node)"
         )
-        await conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority)"
-        )
-        await conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_tasks_type ON tasks(task_type)"
-        )
-        await conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id)"
-        )
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority)")
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_type ON tasks(task_type)")
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id)")
         await conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_tasks_submitted_at ON tasks(submitted_at)"
         )
 
         # 创建索引 - 节点表
-        await conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_nodes_status ON nodes(status)"
-        )
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_nodes_status ON nodes(status)")
         await conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_nodes_last_heartbeat ON nodes(last_heartbeat)"
         )
-        await conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_nodes_platform ON nodes(platform)"
-        )
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_nodes_platform ON nodes(platform)")
 
         # 创建触发器 - 自动更新updated_at
         await conn.execute("""
@@ -199,9 +187,7 @@ class Database:
         await conn.commit()
         logger.info("数据库表结构初始化完成")
 
-    async def execute_transaction(
-        self, operations: List[Dict[str, Any]]
-    ) -> bool:
+    async def execute_transaction(self, operations: List[Dict[str, Any]]) -> bool:
         """
         执行事务操作
 

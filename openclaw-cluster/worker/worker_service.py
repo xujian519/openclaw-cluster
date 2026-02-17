@@ -1,25 +1,26 @@
 """
 OpenClaw 集群系统 - 工作节点服务
-
-工作节点的主服务，处理任务执行和心跳上报
 """
+
 import asyncio
-import sys
 import platform
+import re
 import socket
-from typing import Optional, Dict, Any, Callable, Awaitable
-from datetime import datetime
+from collections.abc import Awaitable
+from typing import Any, Callable, Dict, Optional
+
 import psutil
 
-from common.models import NodeInfo, NodeStatus, Task
-from common.logging import get_logger
 from common.config import Config
+from common.http_client import close_session, get_session
+from common.logging import get_logger
+from common.models import NodeInfo, NodeStatus
+from communication.messages import TaskAssignMessage
 from communication.nats_client import NATSClient
-from communication.messages import TaskAssignMessage, TaskResultMessage
 from communication.task_messaging import TaskMessaging
-from worker.heartbeat import HeartbeatClient
+from skills.skill_discovery import BUILTIN_SKILLS, SkillDiscovery
 from skills.skill_registry import SkillRegistry
-from skills.skill_discovery import SkillDiscovery, BUILTIN_SKILLS
+from worker.heartbeat import HeartbeatClient
 
 logger = get_logger(__name__)
 
@@ -60,24 +61,17 @@ class WorkerService:
         # 获取IP地址
         try:
             self.ip_address = socket.gethostbyname(self.hostname)
-        except:
+        except Exception:
             self.ip_address = "127.0.0.1"
 
         # 获取Tailscale IP（如果可用）
         self.tailscale_ip = self._get_tailscale_ip()
 
         # 监听端口
-        self.port = getattr(config.worker, 'port', 18789)
+        self.port = getattr(config.worker, "port", 18789)
 
         # 最大并发任务数
-        self.max_concurrent_tasks = getattr(
-            config.worker, 'max_concurrent_tasks', 5
-        )
-
-        # 心跳配置
-        heartbeat_interval = getattr(
-            config.worker, 'heartbeat_interval', 5
-        )
+        self.max_concurrent_tasks = getattr(config.worker, "max_concurrent_tasks", 5)
 
         # 消息通信
         self.nats_client: Optional[NATSClient] = None
@@ -98,18 +92,14 @@ class WorkerService:
         self._running_tasks: Dict[str, asyncio.Task] = {}
 
         # 协调器地址
-        coordinator_host = getattr(
-            config.coordinator, 'host', 'localhost'
-        )
-        coordinator_port = getattr(
-            config.coordinator, 'port', 8888
-        )
+        coordinator_host = getattr(config.coordinator, "host", "localhost")
+        coordinator_port = getattr(config.coordinator, "port", 8888)
         self.coordinator_url = f"http://{coordinator_host}:{coordinator_port}"
 
     def _generate_node_id(self) -> str:
         """生成节点ID"""
         # 使用主机名作为基础
-        base_id = socket.gethostname().lower().replace('.', '_')
+        base_id = socket.gethostname().lower().replace(".", "_")
         # 添加平台标识
         platform_id = platform.system().lower()[:3]
         return f"{platform_id}_{base_id}"
@@ -119,6 +109,7 @@ class WorkerService:
         try:
             # 尝试读取Tailscale配置
             import subprocess
+
             result = subprocess.run(
                 ["tailscale", "ip", "-4"],
                 capture_output=True,
@@ -127,7 +118,7 @@ class WorkerService:
             )
             if result.returncode == 0:
                 return result.stdout.strip()
-        except:
+        except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
             pass
         return None
 
@@ -192,9 +183,10 @@ class WorkerService:
             if self.skill_discovery:
                 await self.skill_discovery.stop()
 
-            # 关闭NATS连接
             if self.nats_client:
                 await self.nats_client.close()
+
+            await close_session()
 
             self._is_running = False
 
@@ -210,8 +202,8 @@ class WorkerService:
         # 创建技能注册表
         # 注意：工作节点不需要状态管理器，使用简单的内存注册表
         from skills.skill_registry import SkillRegistry
-        from storage.state_manager import StateManager
         from storage.database import Database
+        from storage.state_manager import StateManager
 
         # 创建临时内存数据库
         db = Database(":memory:")
@@ -222,7 +214,7 @@ class WorkerService:
         self.skill_registry = SkillRegistry(state_manager)
 
         # 创建技能发现服务
-        skills_dir = getattr(self.config.worker, 'skills_dir', './skills')
+        skills_dir = getattr(self.config.worker, "skills_dir", "./skills")
         self.skill_discovery = SkillDiscovery(
             self.skill_registry,
             skills_dir=skills_dir,
@@ -249,9 +241,7 @@ class WorkerService:
             # 创建NATS配置
             from communication.nats_client import NATSConfig
 
-            nats_url = getattr(
-                self.config.communication, 'nats_url', 'nats://localhost:4222'
-            )
+            nats_url = getattr(self.config.communication, "nats_url", "nats://localhost:4222")
 
             nats_config = NATSConfig(
                 url=nats_url,
@@ -288,7 +278,6 @@ class WorkerService:
         """初始化心跳客户端"""
         logger.info("初始化心跳客户端...")
 
-        # 获取已注册的技能名称
         available_skills = list(self.skill_registry._skills.keys())
 
         self.heartbeat_client = HeartbeatClient(
@@ -296,6 +285,7 @@ class WorkerService:
             coordinator_url=self.coordinator_url,
             node_id=self.node_id,
             available_skills=available_skills,
+            get_running_tasks=lambda: len(self._running_tasks),
         )
 
         logger.info(f"✅ 心跳客户端初始化完成 (技能: {available_skills})")
@@ -325,10 +315,7 @@ class WorkerService:
             running_tasks=0,
         )
 
-        # 通过HTTP注册 - 使用aiohttp替代httpx
-        import aiohttp
-        import re
-
+        # 通过HTTP注册
         try:
             payload = {
                 "hostname": node_info.hostname,
@@ -341,26 +328,22 @@ class WorkerService:
                 "max_concurrent_tasks": node_info.max_concurrent_tasks,
             }
 
-            # 将localhost替换为127.0.0.1以避免IPv6连接问题
-            coordinator_url = re.sub(r'://localhost:', '://127.0.0.1:', self.coordinator_url)
+            coordinator_url = re.sub(r"://localhost:", "://127.0.0.1:", self.coordinator_url)
             logger.info(f"正在注册节点 {node_info.node_id} 到协调器 {coordinator_url}")
 
-            timeout = aiohttp.ClientTimeout(total=10, connect=5)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.post(
-                    f"{coordinator_url}/api/v1/nodes/register",
-                    json=payload,
-                ) as response:
-                    logger.info(f"注册响应: 状态码={response.status}")
+            session = await get_session()
+            async with session.post(
+                f"{coordinator_url}/api/v1/nodes/register",
+                json=payload,
+            ) as response:
+                logger.info(f"注册响应: 状态码={response.status}")
 
-                    if response.status == 200:
-                        result = await response.json()
-                        logger.info(f"✅ 成功注册到协调器: {result.get('node_id')}")
-                    else:
-                        text = await response.text()
-                        logger.warning(
-                            f"注册到协调器失败: {response.status} - {text[:200]}"
-                        )
+                if response.status == 200:
+                    result = await response.json()
+                    logger.info(f"✅ 成功注册到协调器: {result.get('node_id')}")
+                else:
+                    text = await response.text()
+                    logger.warning(f"注册到协调器失败: {response.status} - {text[:200]}")
         except Exception as e:
             logger.error(f"注册请求异常: {e}", exc_info=True)
 
@@ -379,9 +362,7 @@ class WorkerService:
 
         logger.info("任务处理器已注册")
 
-    async def _handle_interactive_task(
-        self, message: TaskAssignMessage
-    ) -> Dict[str, Any]:
+    async def _handle_interactive_task(self, message: TaskAssignMessage) -> Dict[str, Any]:
         """
         处理交互式任务
 
@@ -406,9 +387,7 @@ class WorkerService:
             },
         }
 
-    async def _handle_batch_task(
-        self, message: TaskAssignMessage
-    ) -> Dict[str, Any]:
+    async def _handle_batch_task(self, message: TaskAssignMessage) -> Dict[str, Any]:
         """
         处理批处理任务
 
@@ -480,7 +459,7 @@ class WorkerService:
         memory_usage = memory.percent
 
         # 磁盘使用率
-        disk = psutil.disk_usage('/')
+        disk = psutil.disk_usage("/")
         disk_usage = disk.percent
 
         # 运行任务数

@@ -3,11 +3,12 @@ OpenClaw 集群系统 - 技能注册表
 
 管理集群中所有技能的注册、发现和依赖解析
 """
+
 import asyncio
-from typing import Dict, List, Set, Optional, Any
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, List, Optional, Set
 
 from common.logging import get_logger
 from storage.state_manager import StateManager
@@ -17,6 +18,7 @@ logger = get_logger(__name__)
 
 class SkillCategory(Enum):
     """技能类别"""
+
     # 数据处理
     DATA_PROCESSING = "data_processing"
     # 机器学习
@@ -42,6 +44,7 @@ class SkillMetadata:
 
     描述技能的详细信息
     """
+
     # 技能名称
     name: str
     # 技能描述
@@ -100,6 +103,7 @@ class SkillInstance:
 
     记录技能在节点上的实例信息
     """
+
     # 技能名称
     skill_name: str
     # 节点ID
@@ -199,9 +203,7 @@ class SkillRegistry:
 
             return True
 
-    async def register_skill_instance(
-        self, skill_name: str, node_id: str
-    ) -> bool:
+    async def register_skill_instance(self, skill_name: str, node_id: str) -> bool:
         """
         注册技能实例
 
@@ -230,8 +232,7 @@ class SkillRegistry:
 
             # 检查是否已有该节点的实例
             existing_instances = [
-                inst for inst in self._skill_instances[skill_name]
-                if inst.node_id == node_id
+                inst for inst in self._skill_instances[skill_name] if inst.node_id == node_id
             ]
 
             if existing_instances:
@@ -253,9 +254,7 @@ class SkillRegistry:
 
             return True
 
-    async def unregister_skill_instance(
-        self, skill_name: str, node_id: str
-    ) -> bool:
+    async def unregister_skill_instance(self, skill_name: str, node_id: str) -> bool:
         """
         注销技能实例
 
@@ -275,7 +274,8 @@ class SkillRegistry:
             original_count = len(instances)
 
             instances[:] = [
-                inst for inst in instances
+                inst
+                for inst in instances
                 if not (inst.skill_name == skill_name and inst.node_id == node_id)
             ]
 
@@ -304,9 +304,7 @@ class SkillRegistry:
         async with self._lock:
             return self._skills.get(skill_name)
 
-    async def get_skill_instances(
-        self, skill_name: str
-    ) -> List[SkillInstance]:
+    async def get_skill_instances(self, skill_name: str) -> List[SkillInstance]:
         """
         获取技能的所有实例
 
@@ -319,9 +317,7 @@ class SkillRegistry:
         async with self._lock:
             return list(self._skill_instances.get(skill_name, []))
 
-    async def get_available_nodes_for_skill(
-        self, skill_name: str
-    ) -> List[str]:
+    async def get_available_nodes_for_skill(self, skill_name: str) -> List[str]:
         """
         获取具备指定技能的可用节点
 
@@ -333,11 +329,7 @@ class SkillRegistry:
         """
         async with self._lock:
             instances = self._skill_instances.get(skill_name, [])
-            return [
-                inst.node_id
-                for inst in instances
-                if inst.is_available
-            ]
+            return [inst.node_id for inst in instances if inst.is_available]
 
     async def get_node_skills(self, node_id: str) -> Set[str]:
         """
@@ -352,9 +344,7 @@ class SkillRegistry:
         async with self._lock:
             return set(self._node_skills.get(node_id, set()))
 
-    async def list_skills(
-        self, category: Optional[SkillCategory] = None
-    ) -> List[SkillMetadata]:
+    async def list_skills(self, category: Optional[SkillCategory] = None) -> List[SkillMetadata]:
         """
         列出所有技能
 
@@ -372,9 +362,7 @@ class SkillRegistry:
 
             return skills
 
-    async def resolve_skill_dependencies(
-        self, skill_names: List[str]
-    ) -> Dict[str, List[str]]:
+    async def resolve_skill_dependencies(self, skill_names: List[str]) -> Dict[str, List[str]]:
         """
         解析技能依赖关系
 
@@ -444,15 +432,9 @@ class SkillRegistry:
         """
         async with self._lock:
             tag_set = set(tags)
-            return [
-                skill
-                for skill in self._skills.values()
-                if tag_set & set(skill.tags)
-            ]
+            return [skill for skill in self._skills.values() if tag_set & set(skill.tags)]
 
-    async def update_skill_usage(
-        self, skill_name: str, node_id: str, success: bool = True
-    ):
+    async def update_skill_usage(self, skill_name: str, node_id: str, success: bool = True):
         """
         更新技能使用统计
 
@@ -472,8 +454,7 @@ class SkillRegistry:
                     # 更新成功率 (使用移动平均)
                     alpha = 0.1  # 平滑因子
                     instance.success_rate = (
-                        alpha * (1.0 if success else 0.0) +
-                        (1 - alpha) * instance.success_rate
+                        alpha * (1.0 if success else 0.0) + (1 - alpha) * instance.success_rate
                     )
 
                     break
@@ -498,7 +479,8 @@ class SkillRegistry:
             for skill_name, instances in list(self._skill_instances.items()):
                 # 过滤出过期实例
                 active_instances = [
-                    inst for inst in instances
+                    inst
+                    for inst in instances
                     if (now - inst.last_heartbeat) <= timeout or not inst.is_available
                 ]
 
@@ -507,9 +489,7 @@ class SkillRegistry:
 
                 if stale_count > 0:
                     self._skill_instances[skill_name] = active_instances
-                    logger.info(
-                        f"清理了 {stale_count} 个过期实例: {skill_name}"
-                    )
+                    logger.info(f"清理了 {stale_count} 个过期实例: {skill_name}")
 
             self._stats["total_instances"] -= cleaned
 

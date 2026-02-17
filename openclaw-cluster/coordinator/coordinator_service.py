@@ -3,24 +3,23 @@ OpenClaw 集群系统 - 协调器服务
 
 整合所有协调器组件的主服务
 """
-import asyncio
-from typing import Optional, Dict, Any
-from pathlib import Path
 
-from common.models import Task, TaskType
-from common.logging import get_logger
+import asyncio
+from typing import Any, Dict, Optional
+
 from common.config import Config
-from storage.database import Database
-from storage.state_manager import StateManager
-from coordinator.node_service import NodeRegistrationService
-from coordinator.heartbeat_monitor import HeartbeatMonitor
-from coordinator.api import create_api_app, APIServer
-from skills.skill_registry import SkillRegistry
-from skills.skill_discovery import SkillDiscovery, BUILTIN_SKILLS
-from scheduler.task_scheduler import TaskScheduler, SchedulingStrategy
+from common.logging import get_logger
+from common.models import Task
 from communication.nats_client import NATSClient
 from communication.task_messaging import TaskMessaging
-from worker.heartbeat import HeartbeatClient
+from coordinator.api import APIServer
+from coordinator.heartbeat_monitor import HeartbeatMonitor
+from coordinator.node_service import NodeRegistrationService
+from scheduler.task_scheduler import SchedulingStrategy, TaskScheduler
+from skills.skill_discovery import BUILTIN_SKILLS, SkillDiscovery
+from skills.skill_registry import SkillRegistry
+from storage.database import Database
+from storage.state_manager import StateManager
 
 logger = get_logger(__name__)
 
@@ -175,7 +174,7 @@ class CoordinatorService:
         # 创建技能发现服务
         self.skill_discovery = SkillDiscovery(
             self.skill_registry,
-            skills_dir=getattr(self.config.worker, 'skills_dir', './skills'),
+            skills_dir=getattr(self.config.worker, "skills_dir", "./skills"),
             discovery_interval=60,
         )
 
@@ -195,12 +194,8 @@ class CoordinatorService:
         self.node_service = NodeRegistrationService(self.db)
 
         # 创建心跳监控服务
-        heartbeat_timeout = getattr(
-            self.config.coordinator, 'heartbeat_timeout', 90
-        )
-        check_interval = getattr(
-            self.config.coordinator, 'heartbeat_check_interval', 30
-        )
+        heartbeat_timeout = getattr(self.config.coordinator, "heartbeat_timeout", 90)
+        check_interval = getattr(self.config.coordinator, "heartbeat_check_interval", 30)
 
         self.heartbeat_monitor = HeartbeatMonitor(
             self.db,
@@ -240,9 +235,7 @@ class CoordinatorService:
             # 创建NATS配置
             from common.config import NATSConfig
 
-            nats_url = getattr(
-                self.config.communication, 'nats_url', 'nats://localhost:4222'
-            )
+            nats_url = getattr(self.config.communication, "nats_url", "nats://localhost:4222")
 
             nats_config = NATSConfig(
                 url=nats_url,

@@ -4,16 +4,16 @@ OpenClaw 集群系统 - 状态管理验证测试
 
 验证状态管理系统的核心功能
 """
+
 import asyncio
-import sys
 import os
-from datetime import datetime
+import sys
 
 # 添加项目根目录到路径
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from common.models import Task, TaskType, TaskStatus, NodeInfo, NodeStatus
+from common.models import NodeInfo, NodeStatus, Task, TaskStatus, TaskType
 from storage.database import Database
 from storage.state_manager import StateManager
 
@@ -82,7 +82,7 @@ async def main():
 
     # 获取任务统计
     stats = await state_manager.get_task_stats()
-    print(f"✅ 任务统计:")
+    print("✅ 任务统计:")
     print(f"   总任务数: {stats['total']}")
     print(f"   等待中: {stats['pending']}")
     print(f"   运行中: {stats['running']}")
@@ -96,10 +96,7 @@ async def main():
     # 测试心跳更新
     print("\n6. 测试心跳更新...")
     await state_manager.update_heartbeat(
-        node.node_id,
-        cpu_usage=50.0,
-        memory_usage=60.0,
-        running_tasks=1
+        node.node_id, cpu_usage=50.0, memory_usage=60.0, running_tasks=1
     )
     print(f"✅ 心跳更新成功: {node.node_id}")
 
@@ -140,4 +137,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ 测试失败: {e}")
         import traceback
+
         traceback.print_exc()

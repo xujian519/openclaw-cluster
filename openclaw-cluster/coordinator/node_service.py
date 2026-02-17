@@ -3,15 +3,15 @@ OpenClaw 集群系统 - 节点注册服务
 
 处理工作节点的注册、验证和管理
 """
+
 import uuid
 from datetime import datetime
-from typing import Optional, Dict, Any, List
-import socket
+from typing import Any, Dict, List, Optional
 
-from common.models import NodeInfo, NodeStatus
 from common.logging import get_logger
-from storage.repositories import NodeRepository
+from common.models import NodeInfo, NodeStatus
 from storage.database import Database
+from storage.repositories import NodeRepository
 
 logger = get_logger(__name__)
 

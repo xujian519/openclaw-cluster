@@ -3,21 +3,23 @@ OpenClaw 集群系统 - 状态管理器
 
 管理集群状态的内存缓存和持久化
 """
-import asyncio
-from typing import Optional, List, Dict, Any, Set
-from datetime import datetime, timedelta
-from copy import deepcopy
 
+import asyncio
+from copy import deepcopy
+from datetime import datetime
+from typing import Dict, List, Optional
+
+from common.logging import get_logger
 from common.models import (
-    Task,
-    TaskStatus,
+    ClusterState,
     NodeInfo,
     NodeStatus,
-    ClusterState,
+    Task,
+    TaskStatus,
 )
-from common.logging import get_logger
+
 from .database import Database
-from .repositories import TaskRepository, NodeRepository
+from .repositories import NodeRepository, TaskRepository
 
 logger = get_logger(__name__)
 
@@ -179,9 +181,7 @@ class StateManager:
         while True:
             try:
                 # 等待间隔或事件触发
-                await asyncio.wait_for(
-                    self._sync_event.wait(), timeout=self._auto_sync_interval
-                )
+                await asyncio.wait_for(self._sync_event.wait(), timeout=self._auto_sync_interval)
                 self._sync_event.clear()
             except asyncio.TimeoutError:
                 pass

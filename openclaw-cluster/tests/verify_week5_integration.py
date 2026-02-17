@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 """OpenClaw 集群系统 - 第5周集成验证（技能系统+NATS消息）"""
+
 import asyncio
-import sys
 import os
+import sys
 
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from common.models import Task, TaskType, TaskPriority, NodeInfo, NodeStatus
+from common.models import NodeInfo, NodeStatus, Task, TaskPriority, TaskType
+from scheduler.task_scheduler import SchedulingStrategy, TaskScheduler
+from skills.skill_discovery import BUILTIN_SKILLS, SkillDiscovery
+from skills.skill_registry import SkillCategory, SkillMetadata, SkillRegistry
 from storage.database import Database
 from storage.state_manager import StateManager
-from skills.skill_registry import SkillRegistry, SkillMetadata, SkillCategory
-from skills.skill_discovery import SkillDiscovery, BUILTIN_SKILLS
-from scheduler.task_scheduler import TaskScheduler, SchedulingStrategy
 
 
 async def test_skill_registry():
@@ -70,13 +71,13 @@ async def test_skill_registry():
 
     # 解析依赖
     deps = await registry.resolve_skill_dependencies(["weather"])
-    print(f"✅ weather 的依赖:")
+    print("✅ weather 的依赖:")
     print(f"   直接依赖: {deps['direct']}")
     print(f"   所有依赖: {deps['all']}")
 
     # 获取统计
     stats = await registry.get_stats()
-    print(f"✅ 注册表统计:")
+    print("✅ 注册表统计:")
     print(f"   总技能数: {stats['total_skills']}")
     print(f"   总实例数: {stats['total_instances']}")
 
@@ -114,7 +115,7 @@ async def test_skill_discovery():
 
     # 获取技能统计
     stats = await registry.get_stats()
-    print(f"✅ 技能统计:")
+    print("✅ 技能统计:")
     print(f"   总技能数: {stats['total_skills']}")
     print(f"   类别分布: {stats['category_counts']}")
 
@@ -202,11 +203,13 @@ async def test_skill_based_scheduling():
         # 检查分配结果
         updated_task = await state_manager.get_task(task.task_id)
         if updated_task and updated_task.assigned_node:
-            print(f"✅ 任务 {required_skills} -> {updated_task.assigned_node} (期望: {expected_node})")
+            print(
+                f"✅ 任务 {required_skills} -> {updated_task.assigned_node} (期望: {expected_node})"
+            )
 
     # 获取调度器统计
     stats = await scheduler.get_scheduler_stats()
-    print(f"✅ 调度器统计:")
+    print("✅ 调度器统计:")
     print(f"   总调度: {stats['total_scheduled']}")
 
     # 停止调度器
@@ -256,7 +259,14 @@ async def test_skill_dependencies():
     test_cases = [
         (["python"], {"direct": [], "all": [], "missing": []}),
         (["weather"], {"direct": ["search"], "all": ["search"], "missing": []}),
-        (["ml"], {"direct": ["python", "data-analysis"], "all": ["python", "data-analysis"], "missing": []}),
+        (
+            ["ml"],
+            {
+                "direct": ["python", "data-analysis"],
+                "all": ["python", "data-analysis"],
+                "missing": [],
+            },
+        ),
     ]
 
     for required_skills, expected in test_cases:
@@ -268,12 +278,12 @@ async def test_skill_dependencies():
         print(f"   缺失依赖: {deps['missing']}")
 
         # 验证
-        assert set(deps['direct']) == set(expected['direct'])
-        assert set(deps['all']) == set(expected['all'])
+        assert set(deps["direct"]) == set(expected["direct"])
+        assert set(deps["all"]) == set(expected["all"])
 
     # 测试缺失依赖
     deps = await registry.resolve_skill_dependencies(["unknown_skill"])
-    assert "unknown_skill" in deps['missing']
+    assert "unknown_skill" in deps["missing"]
     print(f"✅ 正确检测到缺失依赖: {deps['missing']}")
 
     # 清理
@@ -308,6 +318,7 @@ async def main():
     except Exception as e:
         print(f"\n❌ 测试失败: {e}")
         import traceback
+
         traceback.print_exc()
 
 

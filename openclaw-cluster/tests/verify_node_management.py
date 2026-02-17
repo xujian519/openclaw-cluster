@@ -4,16 +4,16 @@ OpenClaw 集群系统 - 节点管理功能验证
 
 验证节点注册、心跳和API功能
 """
+
 import asyncio
-import sys
 import os
-import json
+import sys
 
 # 添加项目根目录到路径
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from common.models import Task, TaskType, NodeInfo, NodeStatus
+from common.models import NodeInfo, NodeStatus, Task, TaskStatus, TaskType
 from storage.database import Database
 from storage.state_manager import StateManager
 
@@ -52,10 +52,10 @@ async def test_node_registration():
     # 验证节点已保存
     retrieved = await state_manager.get_node(node.node_id)
     if retrieved:
-        print(f"✅ 节点信息验证成功")
+        print("✅ 节点信息验证成功")
         print(f"   主机名: {retrieved.hostname}")
         print(f"   状态: {retrieved.status.value}")
-        print(f   技能: {retrieved.available_skills}")
+        print(f"   技能: {retrieved.available_skills}")
     else:
         print("❌ 节点信息验证失败")
 
@@ -99,10 +99,7 @@ async def test_heartbeat_mechanism():
     print("\n模拟3次心跳更新...")
     for i in range(3):
         await state_manager.update_heartbeat(
-            node.node_id,
-            cpu_usage=30.0 + i * 10,
-            memory_usage=40.0 + i * 5,
-            running_tasks=i
+            node.node_id, cpu_usage=30.0 + i * 10, memory_usage=40.0 + i * 5, running_tasks=i
         )
         print(f"✅ 心跳 {i+1}: CPU={30+i*10}%, 内存={40+i*5}%, 任务={i}")
         await asyncio.sleep(0.1)
@@ -110,7 +107,7 @@ async def test_heartbeat_mechanism():
     # 查询最新状态
     updated_node = await state_manager.get_node(node.node_id)
     if updated_node:
-        print(f"\n✅ 节点状态更新成功:")
+        print("\n✅ 节点状态更新成功:")
         print(f"   CPU使用率: {updated_node.cpu_usage}%")
         print(f"   内存使用率: {updated_node.memory_usage}%")
         print(f"   运行任务数: {updated_node.running_tasks}")
@@ -119,12 +116,12 @@ async def test_heartbeat_mechanism():
     # 测试失联检测
     print("\n测试失联检测...")
     from datetime import datetime, timedelta
-    from common.models import NodeStatus
 
     # 修改最后心跳时间，模拟离线
     async with state_manager._state_lock:
-        state_manager._state.nodes[node.node_id].last_heartbeat = \
-            datetime.now() - timedelta(seconds=100)
+        state_manager._state.nodes[node.node_id].last_heartbeat = datetime.now() - timedelta(
+            seconds=100
+        )
 
     # 检测离线节点
     offline_nodes = await state_manager.find_offline_nodes(timeout_seconds=60)
@@ -182,7 +179,7 @@ async def test_node_queries():
 
     # 获取统计
     state = await state_manager.get_state()
-    print(f"✅ 集群状态:")
+    print("✅ 集群状态:")
     print(f"   总节点: {state.total_nodes}")
     print(f"   在线节点: {state.online_nodes}")
     print(f"   总任务数: {state.total_tasks}")
@@ -235,7 +232,7 @@ async def test_cluster_statistics():
 
     # 获取统计
     state = await state_manager.get_state()
-    print(f"✅ 集群统计:")
+    print("✅ 集群统计:")
     print(f"   总节点数: {state.total_nodes}")
     print(f"   在线节点数: {state.online_nodes}")
     print(f"   总任务数: {state.total_tasks}")
@@ -243,13 +240,13 @@ async def test_cluster_statistics():
 
     # 获取任务统计
     task_stats = await state_manager.get_task_stats()
-    print(f"✅ 任务统计:")
+    print("✅ 任务统计:")
     for status, count in task_stats.items():
         print(f"   {status}: {count}")
 
     # 获取节点统计
     node_stats = await state_manager.get_node_stats()
-    print(f"✅ 节点统计:")
+    print("✅ 节点统计:")
     print(f"   总节点: {node_stats['total']}")
     print(f"   在线: {node_stats['online']}")
     print(f"   离线: {node_stats['offline']}")
@@ -291,6 +288,7 @@ async def main():
     except Exception as e:
         print(f"\n❌ 测试失败: {e}")
         import traceback
+
         traceback.print_exc()
 
 
