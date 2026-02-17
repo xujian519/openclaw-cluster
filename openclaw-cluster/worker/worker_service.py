@@ -304,11 +304,11 @@ class WorkerService:
         """注册到协调器"""
         logger.info("注册到协调器...")
 
-        # 获取可用技能
+        # 获取可用技能 - 直接从skill_registry获取
         available_skills = []
         if self.skill_registry:
-            skills = await self.skill_discovery.get_discovered_skills()
-            available_skills = [s.name for s in skills]
+            available_skills = list(self.skill_registry._skills.keys())
+            logger.info(f"从技能注册表获取到技能: {available_skills}")
 
         # 创建节点信息
         node_info = NodeInfo(
@@ -325,30 +325,44 @@ class WorkerService:
             running_tasks=0,
         )
 
-        # 通过HTTP注册
-        import httpx
+        # 通过HTTP注册 - 使用aiohttp替代httpx
+        import aiohttp
+        import re
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{self.coordinator_url}/api/v1/nodes/register",
-                json={
-                    "hostname": node_info.hostname,
-                    "platform": node_info.platform,
-                    "arch": node_info.arch,
-                    "available_skills": node_info.available_skills,
-                    "ip_address": node_info.ip_address,
-                    "tailscale_ip": node_info.tailscale_ip,
-                    "port": node_info.port,
-                    "max_concurrent_tasks": node_info.max_concurrent_tasks,
-                },
-                timeout=10.0,
-            )
+        try:
+            payload = {
+                "hostname": node_info.hostname,
+                "platform": node_info.platform,
+                "arch": node_info.arch,
+                "available_skills": node_info.available_skills,
+                "ip_address": node_info.ip_address,
+                "tailscale_ip": node_info.tailscale_ip,
+                "port": node_info.port,
+                "max_concurrent_tasks": node_info.max_concurrent_tasks,
+            }
 
-            if response.status_code == 200:
-                result = response.json()
-                logger.info(f"✅ 成功注册到协调器: {result.get('node_id')}")
-            else:
-                logger.warning(f"注册到协调器失败: {response.status_code}")
+            # 将localhost替换为127.0.0.1以避免IPv6连接问题
+            coordinator_url = re.sub(r'://localhost:', '://127.0.0.1:', self.coordinator_url)
+            logger.info(f"正在注册节点 {node_info.node_id} 到协调器 {coordinator_url}")
+
+            timeout = aiohttp.ClientTimeout(total=10, connect=5)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.post(
+                    f"{coordinator_url}/api/v1/nodes/register",
+                    json=payload,
+                ) as response:
+                    logger.info(f"注册响应: 状态码={response.status}")
+
+                    if response.status == 200:
+                        result = await response.json()
+                        logger.info(f"✅ 成功注册到协调器: {result.get('node_id')}")
+                    else:
+                        text = await response.text()
+                        logger.warning(
+                            f"注册到协调器失败: {response.status} - {text[:200]}"
+                        )
+        except Exception as e:
+            logger.error(f"注册请求异常: {e}", exc_info=True)
 
     async def _register_task_handlers(self):
         """注册任务处理器"""
