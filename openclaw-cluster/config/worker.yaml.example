@@ -1,0 +1,32 @@
+# OpenClaw 集群系统 - 工作节点配置示例
+
+# 集群配置
+cluster_name: "openclaw-cluster"
+node_id: "worker-1"  # 每个节点应有不同的 ID
+
+# NATS 配置
+nats:
+  url: "nats://localhost:4222"  # 如果在其他机器上，使用主节点的 Tailscale IP
+  jetstream_enabled: true
+  max_reconnect: 10
+  reconnect_wait: 2
+  timeout: 5.0
+
+# 存储配置
+storage:
+  type: "sqlite"
+  path: "./data/worker.db"
+  pool_size: 2
+
+# 工作节点配置
+worker:
+  max_concurrent_tasks: 5
+  heartbeat_interval: 30  # 心跳间隔（秒）
+  skills_dir: "./skills"
+  port: 18789
+
+# 日志配置
+logging:
+  level: "INFO"
+  format: "json"
+  output: "./logs"

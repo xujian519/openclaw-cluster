@@ -1,0 +1,31 @@
+# OpenClaw 集群系统 - 主节点配置示例
+
+# 集群配置
+cluster_name: "openclaw-cluster"
+node_id: "coordinator-main"
+
+# NATS 配置
+nats:
+  url: "nats://localhost:4222"
+  jetstream_enabled: true
+  max_reconnect: 10
+  reconnect_wait: 2
+  timeout: 5.0
+
+# 存储配置
+storage:
+  type: "sqlite"
+  path: "./data/cluster.db"
+  pool_size: 5
+
+# 主节点配置
+coordinator:
+  host: "0.0.0.0"
+  port: 8080
+  workers: 4
+
+# 日志配置
+logging:
+  level: "INFO"
+  format: "json"
+  output: "./logs"
