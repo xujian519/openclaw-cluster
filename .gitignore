@@ -1,0 +1,18 @@
+# 只保留 openclaw-cluster
+/*
+!openclaw-cluster/
+
+# 忽略 openclaw-cluster 中的生成文件
+openclaw-cluster/__pycache__/
+openclaw-cluster/*/__pycache__/
+openclaw-cluster/*.py[cod]
+openclaw-cluster/*/
+openclaw-cluster/.pytest_cache/
+openclaw-cluster/venv/
+openclaw-cluster/data/
+openclaw-cluster/logs/
+openclaw-cluster/*.db
+openclaw-cluster/*.sqlite
+openclaw-cluster/.coverage
+openclaw-cluster/.coordinator.pid
+openclaw-cluster/.worker.pid

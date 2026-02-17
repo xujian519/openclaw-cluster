@@ -1,0 +1,29 @@
+# OpenClaw 集群系统 - 示例配置文件
+
+# 存储配置
+storage:
+  type: sqlite  # 存储类型: sqlite
+  path: ./data/cluster.db  # 数据库文件路径
+
+# 协调器配置
+coordinator:
+  host: 0.0.0.0  # 监听地址 (0.0.0.0 表示所有接口)
+  port: 8888  # API 服务端口
+  heartbeat_timeout: 90  # 心跳超时时间（秒）
+  heartbeat_check_interval: 30  # 心跳检查间隔（秒）
+
+# 工作节点配置
+worker:
+  max_concurrent_tasks: 5  # 最大并发任务数
+  heartbeat_interval: 5  # 心跳上报间隔（秒）
+  skills_dir: ./skills  # 技能目录路径
+  port: 18789  # 工作节点监听端口
+
+# 通信配置
+communication:
+  nats_url: nats://localhost:4222  # NATS 服务器地址
+
+# 日志配置
+log:
+  level: INFO  # 日志级别: DEBUG, INFO, WARNING, ERROR
+  format: json  # 日志格式: json, text
