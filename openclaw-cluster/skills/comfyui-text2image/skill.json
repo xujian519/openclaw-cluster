@@ -1,0 +1,97 @@
+{
+  "name": "comfyui-text2image",
+  "description": "ComfyUI 文生图技能 - 通过本地 ComfyUI 服务器生成高质量图像",
+  "longDescription": "使用 ComfyUI 强大的节点式图像生成系统，支持多种 SD 模型（SD1.5、SDXL、SD3 等）进行文本到图像生成。支持自定义工作流、LoRA、ControlNet 等高级功能。",
+  "category": "media_processing",
+  "version": "1.0.0",
+  "author": "xujian",
+  "homepage": "https://github.com/comfyanonymous/ComfyUI",
+  "dependencies": [
+    {
+      "name": "comfyui",
+      "type": "service",
+      "required": true,
+      "description": "本地 ComfyUI 服务需要运行在 http://127.0.0.1:8188"
+    }
+  ],
+  "required_resources": {
+    "cpu": "high",
+    "memory": "high",
+    "gpu": "recommended"
+  },
+  "tags": [
+    "image",
+    "generation",
+    "ai",
+    "stable-diffusion",
+    "text2image",
+    "comfyui",
+    "creativity"
+  ],
+  "capabilities": [
+    {
+      "name": "text2image",
+      "description": "文本生成图像",
+      "performance": "5-30s（取决于模型和分辨率）"
+    },
+    {
+      "name": "batch_generation",
+      "description": "批量生成多张图像"
+    },
+    {
+      "name": "custom_workflow",
+      "description": "支持自定义 ComfyUI 工作流"
+    },
+    {
+      "name": "model_selection",
+      "description": "支持多种 Stable Diffusion 模型"
+    }
+  ],
+  "configuration": {
+    "api_endpoint": "http://127.0.0.1:8188",
+    "supported_models": [
+      "SD1.5",
+      "SDXL",
+      "SD3",
+      "SVD",
+      "自定义模型"
+    ],
+    "default_params": {
+      "width": 1024,
+      "height": 1024,
+      "steps": 20,
+      "cfg_scale": 7.0,
+      "seed": -1
+    }
+  },
+  "examples": [
+    {
+      "name": "基础文生图",
+      "description": "生成一张风景画",
+      "prompt": "beautiful mountain landscape at sunset, photorealistic, 8k",
+      "negative_prompt": "blurry, low quality, distorted"
+    },
+    {
+      "name": "人物肖像",
+      "description": "生成人物肖像",
+      "prompt": "portrait of a young woman, professional photography, studio lighting"
+    },
+    {
+      "name": "艺术风格",
+      "description": "生成艺术风格图像",
+      "prompt": "cyberpunk cityscape, neon lights, futuristic, detailed"
+    }
+  ],
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2025-02-17",
+      "changes": [
+        "初始版本",
+        "支持基础文生图功能",
+        "支持自定义工作流",
+        "集成到 OpenClaw 集群"
+      ]
+    }
+  ]
+}

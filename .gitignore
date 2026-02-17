@@ -6,13 +6,59 @@
 openclaw-cluster/__pycache__/
 openclaw-cluster/*/__pycache__/
 openclaw-cluster/*.py[cod]
-openclaw-cluster/*/
-openclaw-cluster/.pytest_cache/
+openclaw-cluster/*$py.class
+openclaw-cluster/*.so
+openclaw-cluster/.Python
+openclaw-cluster/build/
+openclaw-cluster/develop-eggs/
+openclaw-cluster/dist/
+openclaw-cluster/.eggs/
+openclaw-cluster/eggs/
+openclaw-cluster/lib/
+openclaw-cluster/lib64/
+openclaw-cluster/parts/
+openclaw-cluster/sdist/
+openclaw-cluster/wheels/
+openclaw-cluster/*.egg-info/
+
+# 虚拟环境
 openclaw-cluster/venv/
+openclaw-cluster/env/
+openclaw-cluster/ENV/
+openclaw-cluster/.venv
+
+# IDE
+openclaw-cluster/.vscode/
+openclaw-cluster/.idea/
+
+# 测试
+openclaw-cluster/.pytest_cache/
+openclaw-cluster/.coverage
+openclaw-cluster/htmlcov/
+openclaw-cluster/.tox/
+
+# 数据和配置
+openclaw-cluster/config/coordinator.yaml
+openclaw-cluster/config/worker.yaml
 openclaw-cluster/data/
-openclaw-cluster/logs/
 openclaw-cluster/*.db
 openclaw-cluster/*.sqlite
-openclaw-cluster/.coverage
-openclaw-cluster/.coordinator.pid
-openclaw-cluster/.worker.pid
+openclaw-cluster/*.sqlite3
+
+# 日志
+openclaw-cluster/logs/
+openclaw-cluster/*.log
+
+# PID 文件
+openclaw-cluster/*.pid
+
+# 环境变量
+openclaw-cluster/.env
+openclaw-cluster/.env.local
+
+# macOS
+openclaw-cluster/.DS_Store
+
+# 临时文件
+openclaw-cluster/tmp/
+openclaw-cluster/temp/
